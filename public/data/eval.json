@@ -1,0 +1,139 @@
+{
+ "answerable": [
+  {
+   "q": "Why should a text splitter repeat a little text between pieces?",
+   "anchor": "s7-3",
+   "pages": [
+    "51",
+    "52"
+   ]
+  },
+  {
+   "q": "How can I tell if my model memorised the training data?",
+   "anchor": "s3-6",
+   "pages": [
+    "24",
+    "24"
+   ]
+  },
+  {
+   "q": "Which number should a news report use for skewed house prices?",
+   "anchor": "s2-1",
+   "pages": [
+    "11",
+    "11"
+   ]
+  },
+  {
+   "q": "Why is a rare-disease test with 95% accuracy still mostly wrong when positive?",
+   "anchor": "s2-2",
+   "pages": [
+    "12",
+    "12"
+   ]
+  },
+  {
+   "q": "How do I keep an API key out of the browser?",
+   "anchor": "s6-4",
+   "pages": [
+    "45",
+    "45"
+   ]
+  },
+  {
+   "q": "What makes a word match a related word even with no shared letters?",
+   "anchor": "s5-4",
+   "pages": [
+    "38",
+    "38"
+   ]
+  },
+  {
+   "q": "How does a model decide which earlier words matter for the current word?",
+   "anchor": "s6-1",
+   "pages": [
+    "42",
+    "42"
+   ]
+  },
+  {
+   "q": "When should I prefer recall over precision?",
+   "anchor": "s3-5",
+   "pages": [
+    "23",
+    "23"
+   ]
+  },
+  {
+   "q": "What does the learning rate control during training?",
+   "anchor": "s4-3",
+   "pages": [
+    "29",
+    "29"
+   ]
+  },
+  {
+   "q": "Why do image networks reuse the same small filter?",
+   "anchor": "s4-5",
+   "pages": [
+    "31",
+    "31"
+   ]
+  },
+  {
+   "q": "How do I notice that live data no longer looks like training data?",
+   "anchor": "s8-5",
+   "pages": [
+    "63",
+    "63"
+   ]
+  },
+  {
+   "q": "Why split time-based sales data by date instead of randomly?",
+   "anchor": "s3-2",
+   "pages": [
+    "20",
+    "20"
+   ]
+  },
+  {
+   "q": "What is the point of a similarity cut-off in document search?",
+   "anchor": "s7-5",
+   "pages": [
+    "54",
+    "54"
+   ]
+  },
+  {
+   "q": "Why do invented legal cases matter for AI products?",
+   "anchor": "s6-5",
+   "pages": [
+    "46",
+    "46"
+   ]
+  },
+  {
+   "q": "How do I count words with a dictionary in Python?",
+   "anchor": "s1-2",
+   "pages": [
+    "3",
+    "3"
+   ]
+  },
+  {
+   "q": "What goes wrong if I fill missing spend values with zero?",
+   "anchor": "s1-5",
+   "pages": [
+    "6",
+    "6"
+   ]
+  }
+ ],
+ "unanswerable": [
+  "Who painted the Mona Lisa?",
+  "What is the boiling point of mercury?",
+  "Give me a recipe for chicken biryani.",
+  "What is the capital city of Australia?",
+  "How many moons does Jupiter have?"
+ ]
+}

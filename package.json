@@ -1,0 +1,34 @@
+{
+  "name": "citelle",
+  "version": "1.0.0",
+  "description": "Chat with your PDFs: semantic search, page-level citations and honest refusals.",
+  "scripts": {
+    "dev": "vite",
+    "build": "node scripts/embed-book.mjs && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "prepare-book": "node scripts/prepare-book.mjs && node scripts/eval-set.mjs"
+  },
+  "author": "Nimra Imran",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@fontsource/instrument-serif": "^5.1.0",
+    "@fontsource/jetbrains-mono": "^5.1.1",
+    "@fontsource/manrope": "^5.1.0",
+    "nodemailer": "^6.9.15",
+    "pdfjs-dist": "^4.6.82",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.8",
+    "vitest": "^2.1.2"
+  },
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  }
+}
