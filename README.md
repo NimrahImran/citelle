@@ -8,7 +8,7 @@ The demo library is **Neural Ink**, an 84-page illustrated guide to AI and data 
 
 Built by **Nimra Imran**, AI Engineer.
 
-**Live demo:** [citelle.vercel.app](https://citelle.vercel.app)
+**Live demo:** [citelle-azure.vercel.app](https://citelle-azure.vercel.app)
 
 ![Citelle home page](docs/hero.png)
 
