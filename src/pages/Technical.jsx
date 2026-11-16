@@ -164,9 +164,9 @@ function Status() {
 
 const API = [
   {
-    method: 'POST', path: '/api/embed', text: 'Turns up to 100 texts into normalised embedding vectors. task is "document" for chunks or "query" for questions, so the model can optimise each side.',
-    req: `{ "texts": ["Overlap repeats a few sentences..."], "task": "document" }`,
-    res: `{ "model": "gemini-embedding-001", "dims": 768, "vectors": [[0.0123, -0.0456, ...]] }`,
+    method: 'POST', path: '/api/embed', text: 'Turns up to 100 texts into normalised embedding vectors. task is "document" for chunks or "query" for questions. With translate: true, an Urdu or Roman Urdu question is translated to English before embedding and returned as translated.',
+    req: `{ "texts": ["Overfitting kya hota hai?"], "task": "query", "translate": true }`,
+    res: `{ "model": "gemini-embedding-2", "dims": 768, "translated": "What is overfitting?", "vectors": [[0.0123, -0.0456, ...]] }`,
   },
   {
     method: 'POST', path: '/api/answer', text: 'Writes a cited answer from the numbered sources it receives. Streams newline-delimited JSON events. Falls back to the next available model on quota or outage.',
@@ -205,6 +205,7 @@ export default function Technical() {
             {[
               ['PDF.js extraction', 'Text page by page, with printed page labels (i, ii, 1, 2…)', 'lib/pdf.js'],
               ['Cleaning', 'Repeating headers, page numbers and hyphenation removed', 'stripRepeatingLines()'],
+              ['Query translation', 'Urdu and Roman Urdu questions are searched in English, answered in the asker\'s language', 'needsTranslation()'],
               ['Chunking', `${SETTINGS.chunkTokens}-token chunks, ${SETTINGS.overlapTokens}-token overlap, never across pages`, 'chunkPage()'],
               ['Hybrid search', 'Cosine over vectors plus BM25, fused with reciprocal rank fusion', 'searchVectors() · searchBM25() · fuse()'],
               ['Decision', `Refuse below ${Math.round(SETTINGS.minSemantic * 100)}% meaning match; send top ${SETTINGS.topK} otherwise`, 'decide()'],
@@ -214,7 +215,7 @@ export default function Technical() {
           <div className="arch-col server">
             <h3>SERVER · VERCEL FUNCTIONS</h3>
             {[
-              ['/api/embed', 'Gemini embeddings, 768 dimensions, retrieval task types, batches of 100'],
+              ['/api/embed', 'Gemini embeddings, 768 dimensions, retrieval task types, rate-limit aware batching'],
               ['/api/answer', 'Grounded prompt, temperature 0.2, streamed NDJSON, model fallback chain'],
               ['/api/contact', 'Validation, honeypot, rate limit, Gmail delivery'],
               ['/api/health', 'Configuration status without secrets'],

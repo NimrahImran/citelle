@@ -9,7 +9,7 @@ function vec(text, dims = 768) {
   const ws = (text.toLowerCase().match(/[a-z]+/g) || []).filter((w) => w.length > 2).map(canon);
   const add = (s, w) => { let h = 2166136261; for (const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619); v[Math.abs(h) % dims] += w; };
   ws.forEach((w, i) => { add(w, 1); if (i) add(ws[i - 1] + ' ' + w, 0.5); });
-  for (let i = 0; i < dims; i++) v[i] += 0.02;            // shared baseline, like real embeddings
+  for (let i = 0; i < dims; i++) v[i] += 0.07;            // shared baseline: unrelated texts still score about 0.5, like Gemini
   const n = Math.hypot(...v) || 1;
   return Array.from(v, (x) => x / n);
 }

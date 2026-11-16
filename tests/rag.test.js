@@ -74,6 +74,10 @@ describe('decision', () => {
     const d = decide({ mode: 'semantic', semantic: [{ index: 0, score: 0.3 }], keyword: [], threshold: 0.45 });
     expect(d.answer).toBe(false);
   });
+  it('a strong keyword match rescues a borderline meaning score', () => {
+    const d = decide({ mode: 'semantic', semantic: [{ index: 0, score: 0.44 }], keyword: [{ index: 0, score: 6, coverage: 1 }], threshold: 0.5 });
+    expect(d.answer).toBe(true);
+  });
   it('answers and fuses rankings when the score passes', () => {
     const d = decide({ mode: 'semantic', semantic: [{ index: 2, score: 0.8 }, { index: 1, score: 0.6 }], keyword: [{ index: 1, score: 4, coverage: 1 }], threshold: 0.45 });
     expect(d.answer).toBe(true);

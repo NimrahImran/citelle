@@ -73,15 +73,15 @@ export default function HeroScene({ tilt = { x: 0, y: 0 } }) {
         <g className="hero-layer" style={t(6)}>
           <path d={g.ridge[0]} fill="url(#g0)" />
           <path d={g.rim[0]} fill="none" stroke="#8CC3EB" strokeOpacity=".9" strokeWidth="1.3" />
-          <path d={g.n0.lines} fill="none" stroke="#1E4FB0" strokeOpacity=".14" strokeWidth=".8" />
-          <path d={g.n0.dots} fill="#1E4FB0" fillOpacity=".35" />
-          <path d={g.n0.bright} fill="#1E4FB0" fillOpacity=".7" />
+          <path d={g.n0.lines} fill="none" stroke="#1E4FB0" strokeOpacity=".09" strokeWidth=".8" />
+          <path d={g.n0.dots} fill="#1E4FB0" fillOpacity=".22" />
+          <path d={g.n0.bright} fill="#1E4FB0" fillOpacity=".45" />
         </g>
         <g className="hero-layer" style={t(11)}>
           <path d={g.ridge[1]} fill="url(#g1)" />
           <path d={g.rim[1]} fill="none" stroke="#6FAAE0" strokeOpacity=".6" />
-          <path d={g.n1.lines} fill="none" stroke="#1E4FB0" strokeOpacity=".12" strokeWidth=".8" />
-          <path d={g.n1.dots} fill="#1E4FB0" fillOpacity=".3" />
+          <path d={g.n1.lines} fill="none" stroke="#1E4FB0" strokeOpacity=".08" strokeWidth=".8" />
+          <path d={g.n1.dots} fill="#1E4FB0" fillOpacity=".2" />
           <path d={g.n1.bright} fill="#8CC3EB" filter="url(#glow)" />
         </g>
         <g className="hero-layer" style={t(17)}>

@@ -56,12 +56,12 @@ export default function Contact() {
         <div>
           {SERVICES.map((s) => (
             <div key={s.title} className="service">
-              <span className="card-icon" style={{ width: 52, height: 52 }}><s.icon size={28} /></span>
+              <span className="card-icon" style={{ width: 56, height: 56, borderRadius: 16 }}><s.icon size={34} /></span>
               <div><b>{s.title}</b><span>{s.text}</span></div>
             </div>
           ))}
           <div className="service">
-            <span className="card-icon" style={{ width: 52, height: 52 }}><Package size={28} /></span>
+            <span className="card-icon" style={{ width: 56, height: 56, borderRadius: 16 }}><Package size={34} /></span>
             <div><b>What you get</b><span>Clean, documented code in your own GitHub repository, deployment, and a walkthrough of how it works.</span></div>
           </div>
           {links.length > 0 && (

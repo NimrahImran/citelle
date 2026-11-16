@@ -168,7 +168,7 @@ export default function Workspace() {
     if (q) { setParams({}, { replace: true }); run(q); }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => { scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: 'smooth' }); }, [turns]);
+  useEffect(() => { if (turns.length) scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: 'smooth' }); }, [turns]);
 
   async function run(q) {
     const question = q.trim().slice(0, 1000);

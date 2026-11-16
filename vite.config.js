@@ -3,9 +3,8 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  // Absolute site address for link-preview cards. Vercel provides its production domain automatically.
-  const site = env.VITE_SITE_URL
-    || (env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${env.VERCEL_PROJECT_PRODUCTION_URL}` : 'https://citelle-azure.vercel.app');
+  // Absolute site address for link-preview cards (override with VITE_SITE_URL).
+  const site = env.VITE_SITE_URL || 'https://citelle-ai.vercel.app';
   process.env.VITE_SITE_URL = site.replace(/\/$/, '');
   return {
     plugins: [react()],

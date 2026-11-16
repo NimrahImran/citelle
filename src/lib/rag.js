@@ -5,7 +5,7 @@ export const SETTINGS = {
   chunkTokens: 300,       // target chunk size in tokens
   overlapTokens: 60,      // tokens repeated between neighbouring chunks
   topK: 5,                // chunks sent to the language model
-  minSemantic: 0.56,      // below this best cosine score, refuse without calling the model (tuned for Gemini embeddings)
+  minSemantic: 0.5,       // below this best cosine score (and no strong keyword match), refuse without calling the model
   embedDims: 768,
   maxFiles: 8,
   maxPagesPerFile: 300,
@@ -251,7 +251,10 @@ export function fuse(semantic, keyword, k = 60) {
 export function decide({ semantic, keyword, mode, threshold = SETTINGS.minSemantic, topK = SETTINGS.topK }) {
   if (mode === 'semantic') {
     const best = semantic[0]?.score ?? 0;
-    if (best < threshold) return { answer: false, reason: 'below-threshold', best, hits: [] };
+    // A strong keyword match (most of the question's important words, high score) also counts as
+    // evidence, so a good question is never refused just because its meaning score is borderline.
+    const strongKeyword = keyword[0] && keyword[0].coverage >= 0.75 && keyword[0].score >= 4;
+    if (best < threshold && !strongKeyword) return { answer: false, reason: 'below-threshold', best, hits: [] };
     const hits = fuse(semantic, keyword)
       .filter((h) => (h.semantic ?? 0) >= threshold - 0.08 || h.keyword > 0)
       .slice(0, topK);
