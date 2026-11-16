@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-// Misty ridges made of data: each ridge carries a lilac neural network. Generated once, deterministic.
+// Misty ridges made of data: each ridge carries a blue neural network. Generated once, deterministic.
 function buildScene() {
   let s = 20261112;
   const R = () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
@@ -56,37 +56,37 @@ export default function HeroScene({ tilt = { x: 0, y: 0 } }) {
     <div className="hero-bg" aria-hidden="true">
       <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMax slice">
         <defs>
-          <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#14151A" /><stop offset=".55" stopColor="#1E1D26" /><stop offset="1" stopColor="#26232F" /></linearGradient>
-          <radialGradient id="haze" cx=".72" cy=".42" r=".5"><stop offset="0" stopColor="#C8B6E2" stopOpacity=".24" /><stop offset="1" stopColor="#C8B6E2" stopOpacity="0" /></radialGradient>
-          <linearGradient id="g0" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#4A4360" /><stop offset=".5" stopColor="#2E2B3A" /></linearGradient>
-          <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#3A3549" /><stop offset=".5" stopColor="#25232E" /></linearGradient>
-          <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#2D2A38" /><stop offset=".6" stopColor="#1D1C23" /></linearGradient>
-          <linearGradient id="g3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#211F28" /><stop offset="1" stopColor="#17181C" /></linearGradient>
-          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.4" /></filter>
+          <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#F4F2ED" /><stop offset=".5" stopColor="#EEF3F7" /><stop offset="1" stopColor="#E3EEF8" /></linearGradient>
+          <radialGradient id="haze" cx=".74" cy=".4" r=".5"><stop offset="0" stopColor="#8CC3EB" stopOpacity=".45" /><stop offset="1" stopColor="#8CC3EB" stopOpacity="0" /></radialGradient>
+          <linearGradient id="g0" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#D5E7F5" /><stop offset=".6" stopColor="#E7F0F8" /></linearGradient>
+          <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#BCD9F0" /><stop offset=".6" stopColor="#DCEAF6" /></linearGradient>
+          <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#E3EEF7" /><stop offset=".7" stopColor="#EFF3F6" /></linearGradient>
+          <linearGradient id="g3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#F1F2F1" /><stop offset="1" stopColor="#F4F2ED" /></linearGradient>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2" /></filter>
         </defs>
         <rect width="1440" height="900" fill="url(#sky)" />
         <rect width="1440" height="900" fill="url(#haze)" />
         <g className="hero-layer" style={t(-4)}>
-          <path d={g.stars} fill="#E4DAF3" fillOpacity=".35" />
-          <path d={g.starsB} fill="#E4DAF3" fillOpacity=".8" filter="url(#glow)" />
+          <path d={g.stars} fill="#1E4FB0" fillOpacity=".18" />
+          <path d={g.starsB} fill="#8CC3EB" fillOpacity=".9" filter="url(#glow)" />
         </g>
         <g className="hero-layer" style={t(6)}>
           <path d={g.ridge[0]} fill="url(#g0)" />
-          <path d={g.rim[0]} fill="none" stroke="#C8B6E2" strokeOpacity=".55" strokeWidth="1.2" />
-          <path d={g.n0.lines} fill="none" stroke="#C8B6E2" strokeOpacity=".16" strokeWidth=".8" />
-          <path d={g.n0.dots} fill="#C8B6E2" fillOpacity=".55" />
-          <path d={g.n0.bright} fill="#E4DAF3" filter="url(#glow)" />
+          <path d={g.rim[0]} fill="none" stroke="#8CC3EB" strokeOpacity=".9" strokeWidth="1.3" />
+          <path d={g.n0.lines} fill="none" stroke="#1E4FB0" strokeOpacity=".14" strokeWidth=".8" />
+          <path d={g.n0.dots} fill="#1E4FB0" fillOpacity=".35" />
+          <path d={g.n0.bright} fill="#1E4FB0" fillOpacity=".7" />
         </g>
         <g className="hero-layer" style={t(11)}>
           <path d={g.ridge[1]} fill="url(#g1)" />
-          <path d={g.rim[1]} fill="none" stroke="#C8B6E2" strokeOpacity=".22" />
-          <path d={g.n1.lines} fill="none" stroke="#C8B6E2" strokeOpacity=".12" strokeWidth=".8" />
-          <path d={g.n1.dots} fill="#C8B6E2" fillOpacity=".4" />
-          <path d={g.n1.bright} fill="#E4DAF3" fillOpacity=".85" filter="url(#glow)" />
+          <path d={g.rim[1]} fill="none" stroke="#6FAAE0" strokeOpacity=".6" />
+          <path d={g.n1.lines} fill="none" stroke="#1E4FB0" strokeOpacity=".12" strokeWidth=".8" />
+          <path d={g.n1.dots} fill="#1E4FB0" fillOpacity=".3" />
+          <path d={g.n1.bright} fill="#8CC3EB" filter="url(#glow)" />
         </g>
         <g className="hero-layer" style={t(17)}>
           <path d={g.ridge[2]} fill="url(#g2)" />
-          <path d={g.rim[2]} fill="none" stroke="#C8B6E2" strokeOpacity=".14" />
+          <path d={g.rim[2]} fill="none" stroke="#8CC3EB" strokeOpacity=".5" />
         </g>
         <g className="hero-layer" style={t(24)}>
           <path d={g.ridge[3]} fill="url(#g3)" transform="translate(-40 0) scale(1.06 1)" />

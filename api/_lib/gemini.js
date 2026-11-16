@@ -76,6 +76,7 @@ function hinted(err) {
 async function withFallback(list, fn) {
   const tried = new Set();
   const queue = [...list];
+  const errors = [];
   let lastErr;
   while (queue.length) {
     const model = queue.shift();
@@ -85,29 +86,58 @@ async function withFallback(list, fn) {
       return await fn(model);
     } catch (err) {
       lastErr = err;
+      errors.push(`${model}: ${String(err.message).slice(0, 160)}`);
       if (!(err instanceof GeminiError) || !err.retryable) throw err;
       const hint = hinted(err);
       if (hint && !tried.has(hint)) queue.unshift(hint);
     }
   }
-  throw lastErr || new GeminiError('No model available', 503, false);
+  if (lastErr) {
+    lastErr.message = errors.join(' | ');
+    throw lastErr;
+  }
+  throw new GeminiError('No model available', 503, false);
 }
 
-export async function embedTexts(texts, taskType, dims = 768) {
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Google's quota errors say "Please retry in 23.4s"; use that when present.
+function retryDelay(err, fallbackMs) {
+  const m = /retry in ([\d.]+)s/i.exec(err?.message || '');
+  return m ? Math.ceil(Number(m[1]) * 1000) + 500 : fallbackMs;
+}
+
+// Embeds texts in batches. Free-tier keys allow a limited number of texts per minute, so a 429
+// waits and retries (up to `maxWaitMs` in total) before the caller falls back to another model.
+export async function embedTexts(texts, taskType, dims = 768, { batch = 50, maxWaitMs = 8000, onProgress } = {}) {
   const { embedding } = await listModels();
   return withFallback(embedding, async (model) => {
     const vectors = [];
-    for (let i = 0; i < texts.length; i += 100) {
-      const batch = texts.slice(i, i + 100);
-      const data = await call(`models/${model}:batchEmbedContents`, {
-        requests: batch.map((text) => ({
-          model: `models/${model}`,
-          content: { parts: [{ text }] },
-          taskType,
-          outputDimensionality: dims,
-        })),
-      });
-      vectors.push(...data.embeddings.map((e) => e.values));
+    let waited = 0;
+    for (let i = 0; i < texts.length;) {
+      const part = texts.slice(i, i + batch);
+      try {
+        const data = await call(`models/${model}:batchEmbedContents`, {
+          requests: part.map((text) => ({
+            model: `models/${model}`,
+            content: { parts: [{ text }] },
+            taskType,
+            outputDimensionality: dims,
+          })),
+        });
+        vectors.push(...data.embeddings.map((e) => e.values));
+        i += part.length;
+        onProgress?.(i / texts.length, model);
+      } catch (err) {
+        if (err instanceof GeminiError && err.status === 429 && waited < maxWaitMs) {
+          const wait = Math.min(retryDelay(err, 15000), maxWaitMs - waited);
+          waited += wait;
+          await sleep(wait);
+          continue;
+        }
+        err.message = `${model}: ${err.message}`;
+        throw err;
+      }
     }
     return { model, vectors };
   });

@@ -5,7 +5,7 @@ export const SETTINGS = {
   chunkTokens: 300,       // target chunk size in tokens
   overlapTokens: 60,      // tokens repeated between neighbouring chunks
   topK: 5,                // chunks sent to the language model
-  minSemantic: 0.45,      // below this best cosine score, refuse without calling the model
+  minSemantic: 0.56,      // below this best cosine score, refuse without calling the model (tuned for Gemini embeddings)
   embedDims: 768,
   maxFiles: 8,
   maxPagesPerFile: 300,

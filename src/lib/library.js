@@ -88,10 +88,21 @@ async function embed(texts, task, translate = false) {
 }
 
 async function embedChunks(indices, onProgress) {
-  const BATCH = 50;
+  const BATCH = 40;
   for (let i = 0; i < indices.length; i += BATCH) {
     const part = indices.slice(i, i + BATCH);
-    const { model, vectors } = await embed(part.map((k) => embedText(state.chunks[k])), 'document');
+    let result;
+    for (let attempt = 0; ; attempt++) {
+      try {
+        result = await embed(part.map((k) => embedText(state.chunks[k])), 'document');
+        break;
+      } catch (err) {
+        // Free-tier keys limit texts per minute: wait and try again rather than failing the upload.
+        if (err.status === 429 && attempt < 5) { onProgress?.((i) / indices.length, 'waiting'); await new Promise((r) => setTimeout(r, 15000)); continue; }
+        throw err;
+      }
+    }
+    const { model, vectors } = result;
     if (state.embedModel && state.embedModel !== model) {
       // The server switched models: older vectors are no longer comparable.
       state.vectors = state.vectors.map(() => null);
@@ -212,10 +223,10 @@ export async function retrieve(question, { threshold = SETTINGS.minSemantic, top
         translated = english;
         keywordRaw = searchBM25(bm25For(indices), english, 10).map((r) => ({ ...r, index: indices[r.index] }));
       }
-      if (model !== state.embedModel) {
-        state.vectors = state.vectors.map(() => null);
-        state.embedModel = model;
-        await embedChunks(indices);
+      if (state.embedModel && model !== state.embedModel) {
+        // A different embedding model answered (quota fallback). Its vectors can't be compared with
+        // the library's, so use keyword search for this one question instead of re-indexing everything.
+        throw new Error('embedding model changed');
       }
       const sub = indices.map((i) => state.vectors[i]);
       semanticRaw = searchVectors(vectors[0], sub, 10).map((r) => ({ ...r, index: indices[r.index] }));

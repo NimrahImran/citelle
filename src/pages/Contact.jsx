@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { SITE } from '../config.js';
-import { Files, Sparkle, Code, Check, Send, ArrowUpRight } from '../components/Icons.jsx';
+import { DocChat, Bot, ChartUp, Package, Check, Send, ArrowUpRight } from '../components/Icons.jsx';
 
 const SERVICES = [
-  { icon: Files, title: 'Chat with your documents', text: 'A RAG assistant for your PDFs, policies or manuals, with page citations and honest refusals.' },
-  { icon: Sparkle, title: 'AI chatbots and automation', text: 'Assistants that answer customers, sort messages and save your team hours each week.' },
-  { icon: Code, title: 'Machine learning projects', text: 'Prediction models, dashboards and APIs, from your raw data to a live web app.' },
+  { icon: DocChat, title: 'Chat with your documents', text: 'A RAG assistant for your PDFs, policies or manuals, with page citations and honest refusals.' },
+  { icon: Bot, title: 'AI chatbots and automation', text: 'Assistants that answer customers, sort messages and save your team hours each week.' },
+  { icon: ChartUp, title: 'Machine learning projects', text: 'Prediction models, dashboards and APIs, from your raw data to a live web app.' },
 ];
 
 const EMPTY = { name: '', email: '', service: 'Chat with your documents', message: '', website: '' };
@@ -49,19 +49,19 @@ export default function Contact() {
     <div className="container">
       <header className="page-head">
         <span className="kicker">Contact</span>
-        <h1>Let's build your <em className="lilac">document assistant</em>.</h1>
+        <h1>Let's build your <em className="accent">document assistant</em>.</h1>
         <p>Tell me about your documents and what your team needs to find in them. I'll reply by email, usually within one working day.</p>
       </header>
       <div className="contact">
         <div>
           {SERVICES.map((s) => (
             <div key={s.title} className="service">
-              <span className="card-icon" style={{ flex: 'none' }}><s.icon size={22} /></span>
+              <span className="card-icon" style={{ width: 52, height: 52 }}><s.icon size={28} /></span>
               <div><b>{s.title}</b><span>{s.text}</span></div>
             </div>
           ))}
           <div className="service">
-            <span className="card-icon" style={{ flex: 'none', background: 'rgba(143,211,176,.1)', color: 'var(--mint)', borderColor: 'rgba(143,211,176,.3)' }}><Check size={22} /></span>
+            <span className="card-icon" style={{ width: 52, height: 52 }}><Package size={28} /></span>
             <div><b>What you get</b><span>Clean, documented code in your own GitHub repository, deployment, and a walkthrough of how it works.</span></div>
           </div>
           {links.length > 0 && (
@@ -75,7 +75,7 @@ export default function Contact() {
         <form className="form" onSubmit={submit} noValidate>
           {state === 'sent' ? (
             <div className="ok-box" role="status">
-              <Check size={22} style={{ color: 'var(--mint)', flex: 'none' }} />
+              <Check size={22} style={{ color: 'var(--green)', flex: 'none' }} />
               <div><b>Message sent</b><p className="muted" style={{ margin: '4px 0 0' }}>Thank you. I'll reply to your email soon.</p>
                 <button type="button" className="btn btn-ghost btn-sm" style={{ marginTop: 12 }} onClick={() => setState('idle')}>Send another message</button></div>
             </div>

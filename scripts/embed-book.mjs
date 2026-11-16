@@ -13,7 +13,12 @@ if (!process.env.GEMINI_API_KEY) {
 try {
   const book = JSON.parse(await readFile(new URL('../public/data/neural-ink.json', import.meta.url)));
   const texts = book.chunks.map((c) => embedText({ ...c, file: book.file }));
-  const { model, vectors } = await embedTexts(texts, 'RETRIEVAL_DOCUMENT');
+  // Build time has no rush: small batches and long waits keep within free-tier per-minute limits.
+  const { model, vectors } = await embedTexts(texts, 'RETRIEVAL_DOCUMENT', 768, {
+    batch: 25,
+    maxWaitMs: 6 * 60_000,
+    onProgress: (p, m) => console.log(`[embed-book] ${m}: ${Math.round(p * 100)}%`),
+  });
   const q = vectors.map((v) => quantize(l2normalize(Float32Array.from(v))));
   await writeFile(out, JSON.stringify({ model, dims: vectors[0].length, count: q.length, vectors: q }));
   console.log(`[embed-book] embedded ${q.length} chunks with ${model}`);

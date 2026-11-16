@@ -50,18 +50,18 @@ function Inspector({ lib }) {
         <div style={{ marginTop: 22 }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
             <span className={`badge ${res.mode === 'semantic' ? 'badge-mint' : 'badge-coral'}`}><span className="dot" />{res.mode === 'semantic' ? `Semantic + keyword (${res.model})` : 'Keyword mode (BM25)'}</span>
-            <span className={`badge ${res.decision.answer ? 'badge-lilac' : 'badge-coral'}`}>{res.decision.answer ? <Check size={14} /> : <ShieldX size={14} />}{res.decision.answer ? `Answer from ${res.decision.hits.length} chunks` : 'Refuse: nothing relevant enough'}</span>
+            <span className={`badge ${res.decision.answer ? 'badge-blue' : 'badge-coral'}`}>{res.decision.answer ? <Check size={14} /> : <ShieldX size={14} />}{res.decision.answer ? `Answer from ${res.decision.hits.length} chunks` : 'Refuse: nothing relevant enough'}</span>
             {res.note && <span className="badge badge-coral">{res.note}</span>}
           </div>
           {(res.candidates || []).slice(0, 8).map((c, i) => (
             <div key={c.index} className={`result-row${used.has(c.index) ? ' used' : ''}`}>
-              <span className="num" style={{ background: used.has(c.index) ? 'var(--lilac)' : 'rgba(242,238,231,.15)', color: used.has(c.index) ? '#1D1B24' : 'var(--text)' }}>{i + 1}</span>
+              <span className="num" style={{ background: used.has(c.index) ? 'var(--royal)' : '#E3E8EF', color: used.has(c.index) ? '#fff' : 'var(--ink)' }}>{i + 1}</span>
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 700 }}>{c.chunk.file} · page {c.chunk.page} <span style={{ color: 'var(--dim)', fontWeight: 500 }}>· {c.chunk.section}</span></div>
                 <p style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--muted)', lineHeight: 1.55 }}>{c.chunk.text.slice(0, 220)}…</p>
               </div>
               <div className="scores" style={{ fontSize: 12, color: 'var(--dim)', display: 'grid', gap: 4 }}>
-                <span>meaning <b style={{ color: 'var(--lilac-2)' }}>{c.semantic != null ? `${Math.round(c.semantic * 100)}%` : '—'}</b></span>
+                <span>meaning <b style={{ color: 'var(--royal)' }}>{c.semantic != null ? `${Math.round(c.semantic * 100)}%` : '—'}</b></span>
                 <span>keyword <b style={{ color: 'var(--text)' }}>{c.keyword ? c.keyword.toFixed(2) : '—'}</b></span>
                 <span>{estimateTokens(c.chunk.text)} tokens</span>
               </div>
@@ -130,7 +130,7 @@ function Evaluation({ lib }) {
                   <td style={{ fontWeight: 500 }}>{r.q}</td>
                   <td>{r.unanswerable ? 'Refuse' : `p. ${r.expect}`}</td>
                   <td>{r.unanswerable ? r.got : `p. ${r.got}`}</td>
-                  <td style={{ color: r.ok ? 'var(--mint)' : 'var(--coral)', fontWeight: 700 }}>{r.ok ? 'Pass' : 'Miss'}</td>
+                  <td style={{ color: r.ok ? 'var(--green)' : 'var(--coral)', fontWeight: 700 }}>{r.ok ? 'Pass' : 'Miss'}</td>
                 </tr>
               ))}
             </tbody>
@@ -146,12 +146,12 @@ function Status() {
   useEffect(() => { fetch('/api/health?models=1').then((r) => r.json()).then(setS).catch(() => setS({ status: 'offline' })); }, []);
   const row = (label, ok, text) => (
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '10px 0', borderTop: '1px solid var(--line)', fontSize: 14 }}>
-      <span className="muted">{label}</span><b style={{ color: ok ? 'var(--mint)' : 'var(--coral)' }}>{text}</b>
+      <span className="muted">{label}</span><b style={{ color: ok ? 'var(--green)' : 'var(--coral)' }}>{text}</b>
     </div>
   );
   return (
     <div className="card" style={{ transform: 'none' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}><Terminal size={20} style={{ color: 'var(--lilac)' }} /><b>Live system status</b></div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}><Terminal size={20} style={{ color: 'var(--royal)' }} /><b>Live system status</b></div>
       {!s && <span className="thinking"><i /><i /><i /> Checking</span>}
       {s && row('API', s.status === 'ok', s.status === 'ok' ? 'Online' : 'Offline')}
       {s && row('Embeddings + LLM', s.semantic, s.semantic ? 'Connected' : 'Not configured (keyword mode)')}
@@ -189,7 +189,7 @@ export default function Technical() {
     <div className="container" style={{ paddingBottom: 80 }}>
       <header className="page-head">
         <span className="kicker">Technical view</span>
-        <h1>Under the hood of <em className="lilac">Citelle</em></h1>
+        <h1>Under the hood of <em className="accent">Citelle</em></h1>
         <p>Architecture, live retrieval, evaluation and API reference, for engineers and technical buyers who want to see exactly how answers are produced.</p>
       </header>
       <nav className="tech-nav" aria-label="Technical sections">
@@ -209,7 +209,7 @@ export default function Technical() {
               ['Hybrid search', 'Cosine over vectors plus BM25, fused with reciprocal rank fusion', 'searchVectors() · searchBM25() · fuse()'],
               ['Decision', `Refuse below ${Math.round(SETTINGS.minSemantic * 100)}% meaning match; send top ${SETTINGS.topK} otherwise`, 'decide()'],
               ['Citations', 'Numbers checked against sent sources, rendered as page chips', 'parseCitations()'],
-            ].map(([b, s, m]) => <div key={b} className="arch-step"><Layers size={18} style={{ color: 'var(--lilac)', flex: 'none', marginTop: 2 }} /><div><b>{b}</b><span>{s}</span><span className="mono">{m}</span></div></div>)}
+            ].map(([b, s, m]) => <div key={b} className="arch-step"><Layers size={18} style={{ color: 'var(--royal)', flex: 'none', marginTop: 2 }} /><div><b>{b}</b><span>{s}</span><span className="mono">{m}</span></div></div>)}
           </div>
           <div className="arch-col server">
             <h3>SERVER · VERCEL FUNCTIONS</h3>
@@ -219,8 +219,8 @@ export default function Technical() {
               ['/api/contact', 'Validation, honeypot, rate limit, Gmail delivery'],
               ['/api/health', 'Configuration status without secrets'],
               ['Build step', 'Neural Ink pre-embedded at deploy time, stored as 8-bit vectors'],
-            ].map(([b, s]) => <div key={b} className="arch-step"><Code size={18} style={{ color: 'var(--lilac)', flex: 'none', marginTop: 2 }} /><div><b className="mono" style={{ fontSize: 13.5 }}>{b}</b><span>{s}</span></div></div>)}
-            <div className="arch-step" style={{ background: 'rgba(200,182,226,.08)' }}><Shield size={18} style={{ color: 'var(--mint)', flex: 'none', marginTop: 2 }} /><div><b>Secrets stay here</b><span>GEMINI_API_KEY and Gmail credentials live only in environment variables.</span></div></div>
+            ].map(([b, s]) => <div key={b} className="arch-step"><Code size={18} style={{ color: 'var(--royal)', flex: 'none', marginTop: 2 }} /><div><b className="mono" style={{ fontSize: 13.5 }}>{b}</b><span>{s}</span></div></div>)}
+            <div className="arch-step" style={{ borderColor: 'rgba(140,195,235,.35)' }}><Shield size={18} style={{ color: 'var(--green)', flex: 'none', marginTop: 2 }} /><div><b>Secrets stay here</b><span>GEMINI_API_KEY and Gmail credentials live only in environment variables.</span></div></div>
           </div>
         </div>
       </div>
@@ -277,7 +277,7 @@ export default function Technical() {
             ['Keys never reach the client', 'The browser talks only to /api routes; the Gemini key lives in environment variables.'],
             ['Abuse limits', 'Per-IP rate limits, body-size caps, maximum sources, characters and history per request.'],
             ['Graceful degradation', 'Model fallback chain, then keyword search with direct quotes, clearly labelled in the interface.'],
-          ].map(([t, d]) => <div key={t} className="card" style={{ transform: 'none' }}><Shield size={20} style={{ color: 'var(--lilac)' }} /><h3 style={{ fontSize: 16 }}>{t}</h3><p>{d}</p></div>)}
+          ].map(([t, d]) => <div key={t} className="card" style={{ transform: 'none' }}><Shield size={20} style={{ color: 'var(--royal)' }} /><h3 style={{ fontSize: 16 }}>{t}</h3><p>{d}</p></div>)}
         </div>
       </div>
 

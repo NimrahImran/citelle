@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import HeroScene from '../components/HeroScene.jsx';
 import {
-  Arrow, Play, Files, Quote, Shield, ShieldX, Upload, Scissors, Compass, Sparkle, Lock, Layers, Wave, Globe, Code, Book, Download, Check,
+  Logo, Arrow, Play, Files, Quote, Shield, Upload, Scissors, Compass, Sparkle, Lock, Layers, Wave, Globe, Code, Book, Download, Check,
 } from '../components/Icons.jsx';
 import PAGES from '../data/book-pages.json';
 
@@ -23,81 +23,43 @@ function useTilt() {
   return tilt;
 }
 
-function Stage({ tilt }) {
+function Demo({ tilt }) {
   const m = (k) => ({ transform: `translate3d(${(tilt.x * k).toFixed(1)}px, ${(tilt.y * k).toFixed(1)}px, 0)` });
   return (
-    <div className="stage" aria-label="Example: a question answered with a page citation">
-      <div className="stage-glow" />
-      <div className="float pdf-card" style={m(-6)}>
+    <div className="demo" aria-label="Example: a question answered from page 51 of a PDF">
+      <div className="demo-glow" />
+      <div className="float pdf-card" style={m(-5)} aria-hidden="true">
         <div className="pdf-bar">
-          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Files size={14} style={{ color: '#C8B6E2' }} />Neural_Ink.pdf</span>
-          <span style={{ color: '#9F98AD' }}>Page {P}</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Files size={14} />Neural_Ink.pdf</span>
+          <span style={{ color: '#8CC3EB' }}>Page {P}</span>
         </div>
         <div className="pdf-body">
           <span className="k">CHAPTER 7 · RETRIEVAL</span>
           <h3>7.3 Chunking and overlap</h3>
-          <p>Before indexing, long documents are split into chunks of a few hundred tokens. <mark>Overlap repeats a few sentences between neighbouring chunks, so an idea cut at a boundary is still found whole.</mark><sup> 1</sup></p>
-          <svg viewBox="0 0 260 46" style={{ width: '100%', height: 'auto' }} aria-hidden="true">
-            <rect x="0" y="6" width="140" height="14" rx="4" fill="#DCD4E8" />
-            <rect x="104" y="26" width="140" height="14" rx="4" fill="#DCD4E8" />
-            <rect x="104" y="6" width="36" height="34" rx="4" fill="#B9A5DA" fillOpacity=".7" />
-            <text x="8" y="17" fontSize="8" fill="#5E567A" fontFamily="sans-serif">chunk A</text>
-            <text x="200" y="37" fontSize="8" fill="#5E567A" fontFamily="sans-serif">chunk B</text>
-          </svg>
+          <p>Before indexing, long documents are split into chunks of a few hundred tokens. <mark>Overlap repeats a few sentences between neighbouring chunks, so an idea cut at a boundary is still found whole.</mark></p>
+          <div className="pdf-lines"><i style={{ width: '96%' }} /><i style={{ width: '88%' }} /><i style={{ width: '92%' }} /><i style={{ width: '60%' }} /></div>
           <p>Typical settings are 300 to 800 tokens per chunk with 50 to 100 tokens of overlap.</p>
-          <span style={{ alignSelf: 'center', fontSize: 11, color: '#8D86A0' }}>{P}</span>
+          <div className="pdf-lines"><i style={{ width: '90%' }} /><i style={{ width: '74%' }} /></div>
         </div>
       </div>
 
-      <div className="float glass match-card" style={m(10)}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.16em', color: 'var(--lilac)' }}>MEANING MATCH</span>
-          <span style={{ fontSize: 11, color: 'var(--dim)' }}>semantic search</span>
-        </div>
-        <span style={{ fontSize: 12, lineHeight: 1.45, fontStyle: 'italic', color: '#E9E4EE' }}>"Why repeat sentences between text pieces?"</span>
-        {[[P, 91, 'var(--lilac)'], [PAGES['s7-3b'], 84, '#A893CF'], [PAGES['s7-5'], 62, '#7A6F8C']].map(([pg, v, c]) => (
-          <div className="bar-row" key={pg}>
-            <span style={{ width: 34, flex: 'none' }}>p. {pg}</span>
-            <span className="bar"><i style={{ width: `${v}%`, background: c }} /></span>
-            <span style={{ width: 34, textAlign: 'right', fontWeight: 700 }}>{v}%</span>
-          </div>
-        ))}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7, paddingTop: 8, borderTop: '1px solid var(--line)', fontSize: 11.5, color: '#B8E5CC' }}>
-          <Check size={13} style={{ color: 'var(--mint)' }} />No shared keywords, same meaning
-        </div>
-      </div>
+      <svg className="connector" viewBox="0 0 90 60" aria-hidden="true"><path d="M2 8 C40 8 50 52 88 52" fill="none" stroke="#1E4FB0" strokeWidth="1.6" strokeDasharray="4 5" /><circle cx="2" cy="8" r="3.5" fill="#1E4FB0" /><circle cx="88" cy="52" r="3.5" fill="#8CC3EB" stroke="#1E4FB0" strokeWidth="1.5" /></svg>
 
-      <div className="float glass chat-card" style={m(4)}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700 }}><span className="dot" style={{ color: 'var(--mint)' }} />Citelle</span>
-          <span style={{ fontSize: 12, color: 'var(--dim)' }}>Searching 3 PDFs</span>
+      <div className="float answer-card" style={m(6)}>
+        <div className="answer-head">
+          <span style={{ display: 'flex', alignItems: 'center', gap: 9 }}><Logo size={22} />Citelle</span>
+          <span className="badge badge-green"><Check size={13} />Answer found</span>
         </div>
         <div className="q-bubble">What is chunk overlap, and why does it matter?</div>
-        <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: '#E9E4EE' }}>
-          Overlap repeats a few sentences between neighbouring chunks, so an idea cut at a boundary can still be found whole during search.<sup style={{ color: 'var(--lilac)', fontWeight: 800, fontSize: 11 }}> 1</sup>
+        <p style={{ margin: 0, fontSize: 14, lineHeight: 1.65, color: 'var(--ink-2)' }}>
+          Overlap repeats a few sentences between neighbouring chunks, so an idea cut at a boundary can still be found whole during search. <span className="cite">p. {P}</span>
         </p>
         <div className="src-pill">
           <span className="num">1</span>
           <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-            <b style={{ fontSize: 12.5 }}>Neural_Ink.pdf · page {P}</b>
-            <span style={{ fontSize: 11.5, color: 'var(--muted)' }}>Section 7.3, Chunking and overlap</span>
+            <b style={{ fontSize: 13 }}>Neural_Ink.pdf · page {P}</b>
+            <span style={{ fontSize: 12, color: 'var(--muted)' }}>Section 7.3 · 91% meaning match</span>
           </span>
-        </div>
-      </div>
-
-      <div className="float glass refuse-card" style={m(8)}>
-        <span style={{ flex: 'none', width: 30, height: 30, borderRadius: '50%', background: 'rgba(244,183,166,.14)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--coral)' }}><ShieldX size={16} /></span>
-        <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-          <b style={{ fontSize: 12.5 }}>"Who won the 2026 final?"</b>
-          <span style={{ fontSize: 12, color: 'var(--muted)' }}>Not in your documents, so Citelle won't guess.</span>
-        </span>
-      </div>
-
-      <div className="float book-float" style={m(-10)}>
-        <img src="/neural-ink-cover.jpg" alt="" width="98" height="122" />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.18em', color: 'var(--lilac)' }}>DEMO LIBRARY</span>
-          <span style={{ fontSize: 12.5, fontWeight: 700 }}>Ask Neural Ink</span>
         </div>
       </div>
     </div>
@@ -140,17 +102,17 @@ export default function Home() {
               <a href="#how" className="btn btn-ghost"><Play size={17} />See how it works</a>
             </div>
             <div className="hero-feats">
-              <div className="hero-feat"><Files size={22} style={{ color: 'var(--lilac)' }} /><b>Multiple PDFs</b><span>Search one file or a whole folder at once</span></div>
-              <div className="hero-feat"><Quote size={22} style={{ color: 'var(--lilac)' }} /><b>Page-level citations</b><span>Every claim names its file and page</span></div>
-              <div className="hero-feat"><Shield size={22} style={{ color: 'var(--lilac)' }} /><b>Refuses when unsure</b><span>No source found, no made-up answer</span></div>
+              <div className="hero-feat"><Files size={22} style={{ color: 'var(--royal)' }} /><b>Multiple PDFs</b><span>Search one file or a whole folder at once</span></div>
+              <div className="hero-feat"><Quote size={22} style={{ color: 'var(--royal)' }} /><b>Page-level citations</b><span>Every claim names its file and page</span></div>
+              <div className="hero-feat"><Shield size={22} style={{ color: 'var(--royal)' }} /><b>Refuses when unsure</b><span>No source found, no made-up answer</span></div>
             </div>
           </div>
           <div>
-            <Stage tilt={tilt} />
-            <div className="steps-line">
+            <Demo tilt={tilt} />
+            <div className="demo-foot">
               <span><span className="step-dot">1</span>Upload your PDFs</span><span className="ln" />
               <span><span className="step-dot">2</span>Search by meaning</span><span className="ln" />
-              <span><span className="step-dot" style={{ background: 'var(--lilac)', color: '#1D1B24' }}>3</span>Answer with page</span>
+              <span><span className="step-dot" style={{ background: 'var(--royal)', color: '#fff' }}>3</span>Answer with the page</span>
             </div>
           </div>
         </div>
@@ -166,7 +128,7 @@ export default function Home() {
         <div className="container">
           <div className="section-head">
             <span className="kicker">How it works</span>
-            <h2>From a pile of PDFs to an answer <em className="lilac">you can check</em>.</h2>
+            <h2>From a pile of PDFs to an answer <em className="accent">you can check</em>.</h2>
             <p>Four steps run every time you ask. The first two happen once per document; the last two run for every question.</p>
           </div>
           <div className="grid-4">
@@ -186,7 +148,7 @@ export default function Home() {
         <div className="container">
           <div className="section-head">
             <span className="kicker">Features</span>
-            <h2>Built for answers people <em className="lilac">can trust</em>.</h2>
+            <h2>Built for answers people <em className="accent">can trust</em>.</h2>
             <p>The parts that make a document assistant useful in a real business: sources, refusals, privacy and speed.</p>
           </div>
           <div className="grid-4">
@@ -203,10 +165,10 @@ export default function Home() {
 
       <section className="section">
         <div className="container book-show">
-          <div className="book-3d"><img className="cover" src="/neural-ink-cover.jpg" alt="Neural Ink book cover" width="880" height="1100" loading="lazy" /></div>
+          <div className="book-stage"><div style={{ position: 'relative', width: 'min(330px, 78%)', zIndex: 1 }}><img className="book-front" style={{ width: '100%' }} src="/neural-ink-cover.jpg" alt="Neural Ink book cover" width="880" height="1100" loading="lazy" /><span className="book-spine" /></div></div>
           <div>
             <span className="kicker">The demo library</span>
-            <h2 className="serif" style={{ margin: '12px 0 0', fontSize: 'clamp(38px,5vw,60px)', lineHeight: 1.02 }}>Neural Ink, <em className="lilac">a book you can question</em>.</h2>
+            <h2 className="serif" style={{ margin: '12px 0 0', fontSize: 'clamp(38px,5vw,60px)', lineHeight: 1.02 }}>Neural Ink, <em className="accent">a book you can question</em>.</h2>
             <p className="muted" style={{ fontSize: 17, margin: '16px 0 0', maxWidth: 560 }}>An illustrated guide to AI and data science, written for Citelle's demo. Ask it anything from Python basics to RAG, and every answer points to a real page of the book.</p>
             <div className="stat-row">
               <div className="stat"><b>84</b><span>pages</span></div>
@@ -223,7 +185,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section band">
+      <section className="section dark-band">
         <div className="container grid-2" style={{ alignItems: 'center', gap: 'clamp(24px,5vw,64px)' }}>
           <div>
             <span className="kicker">For technical teams</span>

@@ -31,7 +31,7 @@ function LibraryPanel({ lib, onPick, show }) {
   const book = lib.book;
   return (
     <section className={`panel${show ? ' show' : ''}`} aria-label="Library">
-      <div className="panel-head"><h2>LIBRARY</h2><span className="badge badge-lilac">{lib.docs.filter((d) => d.active).length} active</span></div>
+      <div className="panel-head"><h2>LIBRARY</h2><span className="badge badge-blue">{lib.docs.filter((d) => d.active).length} active</span></div>
       <div className="panel-body">
         <label
           className={`dropzone${drag ? ' drag' : ''}`}
@@ -39,13 +39,13 @@ function LibraryPanel({ lib, onPick, show }) {
           onDragLeave={() => setDrag(false)}
           onDrop={(e) => { e.preventDefault(); setDrag(false); take(e.dataTransfer.files); }}
         >
-          <Upload size={22} style={{ color: 'var(--lilac)' }} />
+          <Upload size={22} style={{ color: 'var(--royal)' }} />
           <b>Add your PDFs</b>
           <span>Drop files or click to browse · up to {SETTINGS.maxFiles} PDFs, {SETTINGS.maxFileMB} MB each</span>
           <input ref={input} type="file" accept="application/pdf,.pdf" multiple className="sr-only" onChange={(e) => { take(e.target.files); e.target.value = ''; }} />
         </label>
         {msg.map((m) => <p key={m} className="err" style={{ margin: '8px 2px 0' }}>{m}</p>)}
-        <p style={{ fontSize: 12, color: 'var(--dim)', margin: '10px 2px 14px' }}>Files are read in your browser and never stored on our server.</p>
+        <p className="panel-note">Files are read in your browser and never stored on a server. Switch a file off to leave it out of answers.</p>
 
         {lib.docs.map((d) => (
           <div key={d.id} className={`doc${d.active ? '' : ' off'}`}>
@@ -60,10 +60,14 @@ function LibraryPanel({ lib, onPick, show }) {
               </div>
               {d.note && <div className="doc-meta" style={{ color: 'var(--coral)' }}>{d.note}</div>}
               {(d.status === 'reading' || d.status === 'indexing') && <div className="progress"><i style={{ width: `${Math.max(8, (d.progress || 0) * 100)}%` }} /></div>}
+              {d.status === 'ready' && (
+                <label className="doc-toggle">
+                  <button type="button" className="switch" role="switch" aria-checked={d.active} onClick={() => toggleDoc(d.id)} aria-label={`Use ${d.file} in answers`} />
+                  {d.active ? 'Used in answers' : 'Left out of answers'}
+                </label>
+              )}
             </div>
-            {d.status === 'ready' && (
-              <button className="switch" role="switch" aria-checked={d.active} aria-label={`Search ${d.file}`} onClick={() => toggleDoc(d.id)} />
-            )}
+
             {d.kind === 'upload' && (
               <button className="icon-btn" style={{ width: 32, height: 32 }} aria-label={`Remove ${d.file}`} onClick={() => removeDoc(d.id)}><Trash size={15} /></button>
             )}
@@ -102,7 +106,7 @@ function SourcesPanel({ turn, active, setActive, lib, show }) {
       <div className="panel-body">
         {!turn && (
           <div style={{ color: 'var(--muted)', fontSize: 14 }}>
-            <Quote size={26} style={{ color: 'var(--lilac)', marginBottom: 10 }} />
+            <Quote size={26} style={{ color: 'var(--royal)', marginBottom: 10 }} />
             <p style={{ margin: 0 }}>Ask a question and the passages used for the answer appear here, with their file, page and match score.</p>
             <p style={{ margin: '12px 0 0' }}>Click a numbered chip in the answer to open the real page.</p>
           </div>
@@ -128,7 +132,7 @@ function SourcesPanel({ turn, active, setActive, lib, show }) {
                 <p className="source-text">{highlight(c.text, turn.q)}</p>
                 {h && (
                   <div className="score">
-                    {h.semantic != null && <><span>meaning</span><span className="bar" style={{ maxWidth: 90 }}><i style={{ width: `${Math.max(0, h.semantic) * 100}%` }} /></span><b style={{ color: 'var(--lilac-2)' }}>{Math.round(h.semantic * 100)}%</b></>}
+                    {h.semantic != null && <><span>meaning</span><span className="bar" style={{ maxWidth: 90 }}><i style={{ width: `${Math.max(0, h.semantic) * 100}%` }} /></span><b style={{ color: 'var(--royal)' }}>{Math.round(h.semantic * 100)}%</b></>}
                     {h.keyword ? <span style={{ marginLeft: 'auto' }}>keyword {h.keyword.toFixed(1)}</span> : null}
                   </div>
                 )}
@@ -232,7 +236,7 @@ export default function Workspace() {
                   <span className="ai-mark"><i /></span>
                   <div className="ai-body">
                     {!t.final && !t.text && <span className="thinking"><i /><i /><i /> {statusLabel[t.status] || 'Working'}…</span>}
-                    {!t.final && t.text && <Answer text={t.text} onCite={cite} active={null} streaming />}
+                    {!t.final && t.text && <Answer text={t.text} onCite={cite} active={null} streaming sources={t.retrieval?.hits?.map((h) => h.chunk)} />}
                     {t.final?.error && <div className="refusal"><ShieldX size={20} style={{ color: 'var(--coral)', flex: 'none' }} /><div><b>Something went wrong</b><span>Please try again in a moment.</span></div></div>}
                     {t.final?.refused && (
                       <div className="refusal">
@@ -241,25 +245,33 @@ export default function Workspace() {
                       </div>
                     )}
                     {t.final && !t.final.refused && t.final.text && (
-                      <Answer text={t.final.text} onCite={cite} active={t === last ? active : null} />
+                      <Answer text={t.final.text} onCite={cite} active={t === last ? active : null} sources={t.final.sources} />
                     )}
                     {t.final?.quotes && (
                       <>
-                        <p style={{ color: 'var(--muted)', fontSize: 13.5 }}>{t.final.note || 'Keyword mode: here are the most relevant passages, quoted directly.'}</p>
-                        {t.final.quotes.map((qt, i) => (
-                          <blockquote key={i} className="quote">“{qt.quote}” <button className="cite" onClick={() => cite(qt.source)}>{qt.source}</button></blockquote>
-                        ))}
+                        <p className="note-line">{t.final.note || 'The AI writer is offline, so here are the exact passages from your documents that match your question.'}</p>
+                        {t.final.quotes.map((qt, i) => {
+                          const src = t.final.sources[qt.source - 1];
+                          return (
+                            <div key={i} className="passage">
+                              <div className="passage-top"><Files size={14} />{src?.file}<button className="cite" style={{ marginLeft: 'auto' }} onClick={() => cite(qt.source)}>p. {src?.page}</button></div>
+                              <p>{qt.quote}</p>
+                            </div>
+                          );
+                        })}
                       </>
                     )}
-                    {t.final && !t.final.refused && t.final.sources?.length > 0 && (
+                    {t.final && !t.final.refused && t.final.sources?.length > 0 && !t.final.quotes && (
                       <div className="src-row">
+                        <span className="lbl">Sources</span>
                         {t.final.sources.map((c, i) => (t.final.used.includes(i + 1) || t.final.quotes) && (
                           <button key={c.id} className="src-chip" onClick={() => { if (t === last) cite(i + 1); }}>
-                            <span className="num" style={{ width: 18, height: 18, fontSize: 10 }}>{i + 1}</span>{c.file} · p. {c.page}
+                            <Files size={13} />{c.file} · page {c.page}
                           </button>
                         ))}
                       </div>
                     )}
+                    {t.retrieval?.translated && <span className="translated">Searched in English as: <b>{t.retrieval.translated}</b></span>}
                     {t.final?.model && <span style={{ fontSize: 11.5, color: 'var(--dim)' }}>Answered by {t.final.model} from {t.final.sources.length} retrieved passages</span>}
                   </div>
                 </div>
