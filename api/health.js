@@ -1,6 +1,6 @@
 // GET /api/health  Reports which features are configured. Never returns secrets.
-import { hasKey, listModels } from './_lib/gemini.js';
-import { send } from './_lib/http.js';
+import { hasKey, listModels, embedTexts, translateQuery } from './_lib/gemini.js';
+import { send, rateLimited } from './_lib/http.js';
 
 export default async function handler(req, res) {
   const out = {
@@ -12,6 +12,25 @@ export default async function handler(req, res) {
   if (out.semantic && req.query?.models === '1') {
     const m = await listModels();
     out.models = { generation: m.generation.slice(0, 3), embedding: m.embedding.slice(0, 2) };
+  }
+  // ?selftest=1 runs a tiny live check of translation and embeddings (rate limited).
+  if (out.semantic && req.query?.selftest === '1' && !rateLimited(req, 'selftest', 5)) {
+    const t0 = Date.now();
+    try {
+      out.translation = await translateQuery('Overfitting kya hota hai aur isay kaise rokte hain?');
+      const texts = [
+        'Overlap repeats a few sentences between neighbouring chunks, so an idea cut at a boundary is still found whole.',
+        'Why repeat sentences between text pieces?',
+        'How many moons does Jupiter have?',
+      ];
+      const { model, vectors } = await embedTexts(texts, 'RETRIEVAL_DOCUMENT');
+      const n = (v) => { const m = Math.hypot(...v); return v.map((x) => x / m); };
+      const [a, b, c] = vectors.map(n);
+      const dot = (x, y) => x.reduce((s, v, i) => s + v * y[i], 0);
+      out.selftest = { ok: true, embedModel: model, related: +dot(a, b).toFixed(3), unrelated: +dot(a, c).toFixed(3), ms: Date.now() - t0 };
+    } catch (err) {
+      out.selftest = { ok: false, error: String(err.message || err).slice(0, 200) };
+    }
   }
   send(res, 200, out);
 }

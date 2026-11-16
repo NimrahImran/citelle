@@ -1,6 +1,9 @@
-// POST /api/embed  { texts: string[], task: "document" | "query" }
+// POST /api/embed  { texts: string[], task: "document" | "query", translate?: boolean }
 // Returns normalised embedding vectors from the configured Gemini embedding model.
-import { embedTexts, hasKey, GeminiError } from './_lib/gemini.js';
+// With translate=true and one Urdu or Roman Urdu query, the question is translated to English first
+// and the English version is embedded; it is returned as `translated` so keyword search can use it too.
+import { embedTexts, translateQuery, hasKey, GeminiError } from './_lib/gemini.js';
+import { needsTranslation } from '../src/lib/rag.js';
 import { send, readJson, rateLimited, onlyMethod } from './_lib/http.js';
 
 const MAX_TEXTS = 100;
@@ -19,16 +22,21 @@ export default async function handler(req, res) {
   }
   if (!['document', 'query'].includes(task)) return send(res, 400, { error: 'task must be "document" or "query".' });
 
+  let translated = null;
+  if (body.translate && task === 'query' && texts.length === 1 && needsTranslation(texts[0])) {
+    try { translated = await translateQuery(texts[0]); } catch { translated = null; }
+  }
+
   try {
     const { model, vectors } = await embedTexts(
-      texts.map((t) => t.slice(0, MAX_CHARS)),
+      (translated ? [translated] : texts).map((t) => t.slice(0, MAX_CHARS)),
       task === 'query' ? 'RETRIEVAL_QUERY' : 'RETRIEVAL_DOCUMENT',
     );
     const normalised = vectors.map((v) => {
       const n = Math.hypot(...v) || 1;
       return v.map((x) => Math.round((x / n) * 1e5) / 1e5);
     });
-    return send(res, 200, { model, dims: normalised[0]?.length || 0, vectors: normalised });
+    return send(res, 200, { model, dims: normalised[0]?.length || 0, vectors: normalised, translated });
   } catch (err) {
     const status = err instanceof GeminiError && err.status === 429 ? 429 : 502;
     return send(res, status, { error: 'The embedding service is unavailable right now.', code: 'UPSTREAM' });

@@ -152,6 +152,21 @@ export function searchBM25(index, query, k = 10, k1 = 1.4, b = 0.75) {
     .map((i) => ({ index: i, score: scores[i], coverage: matched / q.length }));
 }
 
+// ---------------------------------------------------------------- language
+
+// Common Roman Urdu words. Two or more in a question (or any Urdu script) means it is worth
+// translating the question to English before searching English documents.
+const ROMAN_URDU = new Set(('kya kia hai hain hay hota hoti hotay hote kaise kaisay kese kesay kyun kyon kiun mein main mujhe mujhay ' +
+  'ko ka ki ke se say aur ya nahi nahin nai karna karte karta karti krna krte batao bataen bataye batayen samjhao samjhaen ' +
+  'matlab kis kon kaun isay usay iska uska wala wali chahiye chahye sakte sakta sakti liye lye tarah tareeqa farq kab kahan ' +
+  'kitna kitne kitni yeh ye woh wo hum ap aap apna apni').split(' '));
+
+export function needsTranslation(text) {
+  if (/[\u0600-\u06FF]/.test(text)) return true;
+  const words = text.toLowerCase().match(/[a-z]+/g) || [];
+  return words.filter((w) => ROMAN_URDU.has(w)).length >= 2;
+}
+
 // ---------------------------------------------------------------- vectors
 
 export function l2normalize(v) {

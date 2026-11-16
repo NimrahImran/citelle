@@ -147,3 +147,13 @@ describe('Neural Ink index', () => {
     expect(top).toContain('7.3 Chunking and overlap');
   });
 });
+
+describe('language detection', async () => {
+  const { needsTranslation } = await import('../src/lib/rag.js');
+  it('flags Roman Urdu and Urdu script, not English', () => {
+    expect(needsTranslation('Overfitting kya hota hai aur isay kaise rokte hain?')).toBe(true);
+    expect(needsTranslation('اوور فٹنگ کیا ہے؟')).toBe(true);
+    expect(needsTranslation('What is the difference between precision and recall?')).toBe(false);
+    expect(needsTranslation('Is a main idea of RAG to cite pages?')).toBe(false);
+  });
+});

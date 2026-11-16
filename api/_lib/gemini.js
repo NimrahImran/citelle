@@ -148,3 +148,19 @@ export async function streamAnswer({ system, contents, temperature = 0.2, maxOut
     return { model, finish };
   });
 }
+
+// Translates a non-English search question to English, so it matches English documents.
+// Returns null when nothing usable comes back; the caller then searches with the original text.
+export async function translateQuery(text) {
+  const { generation } = await listModels();
+  const lite = [...generation.filter((m) => m.endsWith('-lite')), ...generation];
+  return withFallback(lite, async (model) => {
+    const data = await call(`models/${model}:generateContent`, {
+      systemInstruction: { parts: [{ text: 'Translate the user\'s question into clear, natural English for a document search. Keep technical terms. Reply with only the English question, nothing else.' }] },
+      contents: [{ role: 'user', parts: [{ text: text.slice(0, 600) }] }],
+      generationConfig: { temperature: 0, maxOutputTokens: 120 },
+    });
+    const out = (data.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('').trim().replace(/^["']|["']$/g, '');
+    return out && out.length < 600 ? out : null;
+  });
+}

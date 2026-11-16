@@ -80,11 +80,11 @@ export function loadDemo() {
 
 // ---------------------------------------------------------------- embeddings
 
-async function embed(texts, task) {
-  const r = await fetch('/api/embed', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ texts, task }) });
+async function embed(texts, task, translate = false) {
+  const r = await fetch('/api/embed', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ texts, task, translate }) });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw Object.assign(new Error(j.error || 'Embedding failed'), { code: j.code, status: r.status });
-  return { model: j.model, vectors: j.vectors.map((v) => l2normalize(Float32Array.from(v))) };
+  return { model: j.model, translated: j.translated || null, vectors: j.vectors.map((v) => l2normalize(Float32Array.from(v))) };
 }
 
 async function embedChunks(indices, onProgress) {
@@ -196,9 +196,10 @@ export async function retrieve(question, { threshold = SETTINGS.minSemantic, top
   await loadDemo();
   const indices = activeIndices();
   if (!indices.length) return { mode: 'none', decision: { answer: false, reason: 'no-documents', hits: [] }, hits: [] };
-  const keywordRaw = searchBM25(bm25For(indices), question, 10).map((r) => ({ ...r, index: indices[r.index] }));
+  let keywordRaw = searchBM25(bm25For(indices), question, 10).map((r) => ({ ...r, index: indices[r.index] }));
 
   let mode = 'keyword';
+  let translated = null;
   let semanticRaw = [];
   let note = null;
   if (!forceKeyword && (await checkServer()).semantic) {
@@ -206,7 +207,11 @@ export async function retrieve(question, { threshold = SETTINGS.minSemantic, top
       await ensureDemoVectors();
       const missing = indices.filter((i) => !state.vectors[i]);
       if (missing.length) await embedChunks(missing);
-      const { model, vectors } = await embed([question], 'query');
+      const { model, vectors, translated: english } = await embed([question], 'query', true);
+      if (english) {
+        translated = english;
+        keywordRaw = searchBM25(bm25For(indices), english, 10).map((r) => ({ ...r, index: indices[r.index] }));
+      }
       if (model !== state.embedModel) {
         state.vectors = state.vectors.map(() => null);
         state.embedModel = model;
@@ -226,7 +231,7 @@ export async function retrieve(question, { threshold = SETTINGS.minSemantic, top
   const candidates = [...byIndex.entries()].map(([index, s]) => ({ index, ...s, chunk: state.chunks[index] }));
   candidates.sort((a, b) => (b.semantic ?? -1) - (a.semantic ?? -1) || (b.keyword ?? 0) - (a.keyword ?? 0));
   const hits = decision.hits.map((h) => ({ ...h, chunk: state.chunks[h.index] }));
-  return { mode, note, decision, hits, candidates, model: state.embedModel };
+  return { mode, note, decision, hits, candidates, model: state.embedModel, translated };
 }
 
 // The full question-answering pipeline. Yields events for the UI.
