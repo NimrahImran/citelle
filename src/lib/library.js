@@ -81,7 +81,8 @@ export function loadDemo() {
 // ---------------------------------------------------------------- embeddings
 
 async function embed(texts, task, translate = false) {
-  const r = await fetch('/api/embed', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ texts, task, translate }) });
+  // Ask for the model the library was embedded with: vectors from different models can't be compared.
+  const r = await fetch('/api/embed', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ texts, task, translate, model: state.embedModel || undefined }) });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw Object.assign(new Error(j.error || 'Embedding failed'), { code: j.code, status: r.status });
   return { model: j.model, translated: j.translated || null, vectors: j.vectors.map((v) => l2normalize(Float32Array.from(v))) };

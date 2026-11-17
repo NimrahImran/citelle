@@ -1,4 +1,4 @@
-// POST /api/embed  { texts: string[], task: "document" | "query", translate?: boolean }
+// POST /api/embed  { texts: string[], task: "document" | "query", translate?: boolean, model?: string }
 // Returns normalised embedding vectors from the configured Gemini embedding model.
 // With translate=true and one Urdu or Roman Urdu query, the question is translated to English first
 // and the English version is embedded; it is returned as `translated` so keyword search can use it too.
@@ -35,6 +35,10 @@ export default async function handler(req, res) {
       // English documents and Urdu documents equally well. The English vector comes first.
       (translated ? [translated, texts[0]] : texts).map((t) => t.slice(0, MAX_CHARS)),
       task === 'query' ? 'RETRIEVAL_QUERY' : 'RETRIEVAL_DOCUMENT',
+      768,
+      // The browser names the model its library was embedded with; it is tried first so new vectors
+      // stay comparable with the old ones.
+      { prefer: typeof body.model === 'string' ? body.model.slice(0, 80) : null },
     );
     const normalised = vectors.map((v) => {
       const n = Math.hypot(...v) || 1;

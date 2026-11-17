@@ -86,9 +86,11 @@ export function orderModels(list) {
   return [...ok, ...cold];
 }
 
-async function withFallback(list, fn, { attempts = [], remember = false } = {}) {
+async function withFallback(list, fn, { attempts = [], remember = false, first = null } = {}) {
   const tried = new Set();
   const queue = orderModels(list);
+  // A model the caller needs (for example the one a library was embedded with) always goes first.
+  if (first && queue.includes(first)) queue.splice(queue.indexOf(first), 1), queue.unshift(first);
   const errors = [];
   let lastErr;
   while (queue.length) {
@@ -147,7 +149,7 @@ function retryDelay(err, fallbackMs) {
 
 // Embeds texts in batches. Free-tier keys allow a limited number of texts per minute, so a 429
 // waits and retries (up to `maxWaitMs` in total) before the caller falls back to another model.
-export async function embedTexts(texts, taskType, dims = 768, { batch = 50, maxWaitMs = 8000, onProgress } = {}) {
+export async function embedTexts(texts, taskType, dims = 768, { batch = 50, maxWaitMs = 8000, onProgress, prefer = null } = {}) {
   const { embedding } = await listModels();
   return withFallback(embedding, async (model) => {
     const vectors = [];
@@ -178,7 +180,7 @@ export async function embedTexts(texts, taskType, dims = 768, { batch = 50, maxW
       }
     }
     return { model, vectors };
-  });
+  }, { first: prefer });
 }
 
 // Fast settings first: newer Gemini models "think" before writing, which can add many seconds.
