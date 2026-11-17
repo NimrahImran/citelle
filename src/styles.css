@@ -426,3 +426,10 @@ pre.code { margin: 0; padding: 16px 18px; border-radius: 14px; background: var(-
   *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
 }
 .arch-col.server .mono, .arch-col.server b.mono { color: var(--sky); }
+.service .service-icon { margin-top: 0; }
+.service .service-icon, .service-icon { flex: none; width: 52px; height: 52px; border-radius: 15px; display: flex !important; align-items: center; justify-content: center; background: linear-gradient(180deg, #F1F7FD, var(--sky-wash)); border: 1px solid var(--sky-2); color: var(--royal) !important; }
+.service:hover .service-icon { background: var(--royal); color: #fff !important; border-color: var(--royal); }
+.service { transition: border-color .2s, box-shadow .2s; }
+.service:hover { border-color: var(--sky-2); box-shadow: var(--shadow); }
+.service-icon svg { transition: transform .2s; }
+.service:hover .service-icon svg { transform: scale(1.06); }

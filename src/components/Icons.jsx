@@ -47,41 +47,29 @@ export const Refresh = (p) => <I {...p}><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6
 export const Terminal = (p) => <I {...p}><rect x="3" y="4" width="18" height="16" rx="2" /><path d="m7 9 3 3-3 3M13 15h4" /></I>;
 export const Plus = (p) => <I {...p}><path d="M12 5v14M5 12h14" /></I>;
 
-// Two-tone glyphs for service tiles: white shapes with sky-blue accents, made for a royal-blue tile.
+// Clean line icons for the service tiles: one colour, rounded strokes, generous spacing.
+const L = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round' };
 export const DocChat = ({ size = 26 }) => (
-  <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
-    <path d="M7 3h11l6 6v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" fill="#fff" />
-    <path d="M18 3v4.5A1.5 1.5 0 0 0 19.5 9H24z" fill="#C9E2F5" />
-    <rect x="8.5" y="12" width="9" height="2" rx="1" fill="#1E4FB0" /><rect x="8.5" y="16" width="6" height="2" rx="1" fill="#8CC3EB" />
-    <path d="M18 18h9a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-4l-3.5 3v-3H18a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2z" fill="#8CC3EB" stroke="#0F2D6B" strokeWidth="1.2" />
-    <circle cx="20" cy="22.5" r="1.1" fill="#0F2D6B" /><circle cx="22.5" cy="22.5" r="1.1" fill="#0F2D6B" /><circle cx="25" cy="22.5" r="1.1" fill="#0F2D6B" />
-  </svg>
+  <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true"><g {...L}>
+    <path d="M13 3H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3" /><path d="M13 3l4 4h-3a1 1 0 0 1-1-1z" /><path d="M8 9h5M8 12.5h3" />
+    <path d="M14 13h6a1.5 1.5 0 0 1 1.5 1.5v3.5a1.5 1.5 0 0 1-1.5 1.5h-2.5L15 21.5v-2h-1a1.5 1.5 0 0 1-1.5-1.5v-3.5A1.5 1.5 0 0 1 14 13z" />
+  </g></svg>
 );
 export const Bot = ({ size = 26 }) => (
-  <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
-    <rect x="15" y="3" width="2" height="5" rx="1" fill="#C9E2F5" /><circle cx="16" cy="3.5" r="2" fill="#8CC3EB" />
-    <rect x="5" y="8" width="22" height="17" rx="6" fill="#fff" />
-    <rect x="8.5" y="12" width="15" height="8" rx="4" fill="#0F2D6B" />
-    <circle cx="12.5" cy="16" r="2" fill="#8CC3EB" /><circle cx="19.5" cy="16" r="2" fill="#8CC3EB" />
-    <rect x="2" y="13" width="3" height="7" rx="1.5" fill="#C9E2F5" /><rect x="27" y="13" width="3" height="7" rx="1.5" fill="#C9E2F5" />
-    <path d="M11 25h10v2a2 2 0 0 1-2 2h-6a2 2 0 0 1-2-2z" fill="#C9E2F5" />
-  </svg>
+  <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true"><g {...L}>
+    <path d="M12 3.5V6" /><circle cx="12" cy="3" r=".6" fill="currentColor" />
+    <rect x="4.5" y="6" width="15" height="12" rx="4" /><path d="M9.5 11v1.5M14.5 11v1.5" /><path d="M9.5 15.2c1.4.9 3.6.9 5 0" />
+    <path d="M2.5 11v3M21.5 11v3" />
+  </g></svg>
 );
 export const ChartUp = ({ size = 26 }) => (
-  <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
-    <rect x="3" y="3" width="26" height="26" rx="5" fill="#fff" />
-    <rect x="8" y="18" width="3.5" height="6" rx="1" fill="#C9E2F5" /><rect x="14" y="14" width="3.5" height="10" rx="1" fill="#8CC3EB" /><rect x="20" y="10" width="3.5" height="14" rx="1" fill="#1E4FB0" />
-    <path d="M7.5 14.5l6-4.5 4 2.5 7-5.5" fill="none" stroke="#0F2D6B" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    <circle cx="24.5" cy="7" r="2" fill="#0F2D6B" />
-  </svg>
+  <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true"><g {...L}>
+    <path d="M4 4v15a1 1 0 0 0 1 1h15" /><path d="M8 16v-3M12 16V9.5M16 16v-5" /><path d="M7.5 9.5 11 6.5l3 2 5-4.5" /><path d="M16.5 4H19v2.5" />
+  </g></svg>
 );
 export const Package = ({ size = 26 }) => (
-  <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
-    <path d="M16 3l11 5.5v13L16 27 5 21.5v-13z" fill="#fff" />
-    <path d="M16 14v13L5 21.5v-13z" fill="#C9E2F5" />
-    <path d="M5 8.5 16 14l11-5.5" fill="none" stroke="#1E4FB0" strokeWidth="1.4" strokeLinejoin="round" />
-    <path d="M10.5 5.8 21.5 11.3v4" fill="none" stroke="#8CC3EB" strokeWidth="2" strokeLinecap="round" />
-    <circle cx="24" cy="24" r="6" fill="#8CC3EB" stroke="#0F2D6B" strokeWidth="1.4" />
-    <path d="M21.4 24.1l1.8 1.8 3.4-3.6" fill="none" stroke="#0F2D6B" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
+  <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true"><g {...L}>
+    <path d="M20 8.5v-1a1 1 0 0 0-.55-.9l-7-3.5a1 1 0 0 0-.9 0l-7 3.5a1 1 0 0 0-.55.9v9a1 1 0 0 0 .55.9l7 3.5a1 1 0 0 0 .9 0l1.6-.8" />
+    <path d="M4.3 7 12 11l7.7-4M12 11v10M8 5l7.6 4" /><circle cx="18" cy="17" r="3.5" /><path d="m16.6 17 1 1 1.9-2" />
+  </g></svg>
 );

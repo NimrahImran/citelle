@@ -318,3 +318,19 @@ export function extractiveAnswer(query, chunks) {
   });
   return picks.sort((a, b) => b.score - a.score).slice(0, 3).map(({ quote, source }) => ({ quote, source }));
 }
+
+// ---------------------------------------------------------------- small talk
+
+// Greetings and thanks get an instant reply: no search, no model call, no waiting.
+const GREETING = /^(hi+|hello+|hey+|hiya|good (morning|afternoon|evening)|yo)\b/;
+const SALAM = /^(assalam|asalam|salam|aoa|as-salamu|السلام)/;
+const THANKS = /^(thanks?|thank you|thx|shukriya|shukria|jazak ?allah|ok(ay)?|great|nice)\b/;
+
+export function smallTalk(text) {
+  const t = text.trim().toLowerCase().replace(/[!.?,\s]+$/g, '');
+  if (!t || t.split(/\s+/).length > 5) return null;
+  if (SALAM.test(t)) return 'Walaikum assalam! Apni files ke bare mein kuch bhi poochein. Main jawab ke sath file aur page number bhi bataun ga.';
+  if (GREETING.test(t)) return 'Hello! Ask me anything about your documents, and I will answer with the exact file and page.';
+  if (THANKS.test(t)) return 'You\'re welcome. Ask another question whenever you like.';
+  return null;
+}

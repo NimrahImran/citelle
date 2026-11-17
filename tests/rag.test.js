@@ -161,3 +161,13 @@ describe('language detection', async () => {
     expect(needsTranslation('Is a main idea of RAG to cite pages?')).toBe(false);
   });
 });
+
+describe('small talk', async () => {
+  const { smallTalk } = await import('../src/lib/rag.js');
+  it('answers greetings instantly and leaves real questions alone', () => {
+    expect(smallTalk('Hello')).toMatch(/Hello/);
+    expect(smallTalk('assalam o alaikum')).toMatch(/Walaikum/);
+    expect(smallTalk('thank you!')).toMatch(/welcome/);
+    expect(smallTalk('hello, what is overfitting and how do I stop it?')).toBeNull();
+  });
+});

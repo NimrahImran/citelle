@@ -1,6 +1,9 @@
 // POST /api/answer  { question, sources: [{file, page, text}], history?: [{role, text}] }
 // Streams newline-delimited JSON events: meta, delta, done, error.
 import { streamAnswer, hasKey } from './_lib/gemini.js';
+
+// Send each piece to the browser as soon as it is written instead of buffering the whole answer.
+export const config = { supportsResponseStreaming: true };
 import { send, readJson, rateLimited, onlyMethod } from './_lib/http.js';
 
 export const SYSTEM = `You are Citelle, a document question-answering assistant.
@@ -54,6 +57,8 @@ export default async function handler(req, res) {
   res.setHeader('cache-control', 'no-store');
   res.setHeader('x-accel-buffering', 'no');
   const emit = (event) => res.write(JSON.stringify(event) + '\n');
+  res.flushHeaders?.();
+  emit({ type: 'start' });
   const controller = new AbortController();
   req.on('close', () => controller.abort());
 

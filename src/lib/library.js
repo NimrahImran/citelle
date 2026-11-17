@@ -1,7 +1,7 @@
 // The document library that lives in the browser: documents, chunks, vectors and the ask() pipeline.
 import {
   SETTINGS, buildBM25, searchBM25, searchVectors, decide, chunkDocument, normalizeWhitespace,
-  stripRepeatingLines, embedText, dequantize, l2normalize, parseCitations, isRefusal, extractiveAnswer, REFUSAL,
+  stripRepeatingLines, embedText, dequantize, l2normalize, parseCitations, isRefusal, extractiveAnswer, REFUSAL, smallTalk,
 } from './rag.js';
 import { extractPdf } from './pdf.js';
 import { idbGet, idbSet } from './idb.js';
@@ -247,6 +247,11 @@ export async function retrieve(question, { threshold = SETTINGS.minSemantic, top
 
 // The full question-answering pipeline. Yields events for the UI.
 export async function* ask(question, history = []) {
+  const hello = smallTalk(question);
+  if (hello) {
+    yield { type: 'final', refused: false, text: hello, sources: [], used: [], mode: 'chat' };
+    return;
+  }
   yield { type: 'status', step: 'search' };
   const r = await retrieve(question);
   yield { type: 'retrieval', ...r };

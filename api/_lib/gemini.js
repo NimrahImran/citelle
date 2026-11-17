@@ -143,15 +143,39 @@ export async function embedTexts(texts, taskType, dims = 768, { batch = 50, maxW
   });
 }
 
-// Streams an answer. onText receives text pieces; returns the model used.
+// Fast settings first: newer Gemini models "think" before writing, which can add many seconds.
+// Each model remembers the first variant it accepts; unsupported fields fall through to the next.
+const THINKING_VARIANTS = [{ thinkingBudget: 0 }, { thinkingLevel: 'low' }, null];
+const variantFor = new Map();
+
+async function openStream(model, body, signal) {
+  const start = variantFor.get(model) ?? 0;
+  let lastErr;
+  for (let v = start; v < THINKING_VARIANTS.length; v++) {
+    const thinking = THINKING_VARIANTS[v];
+    const generationConfig = { ...body.generationConfig, ...(thinking ? { thinkingConfig: thinking } : {}) };
+    try {
+      const res = await call(`models/${model}:streamGenerateContent?alt=sse`, { ...body, generationConfig }, { stream: true, signal });
+      variantFor.set(model, v);
+      return res;
+    } catch (err) {
+      lastErr = err;
+      // Only a rejected thinking setting is worth retrying on the same model.
+      if (!(err instanceof GeminiError) || err.status !== 400 || !/think/i.test(err.message)) throw err;
+    }
+  }
+  throw lastErr;
+}
+
+// Streams an answer. onText receives text pieces as they arrive; returns the model used.
 export async function streamAnswer({ system, contents, temperature = 0.2, maxOutputTokens = 900, onStart, onText, signal }) {
   const { generation } = await listModels();
   return withFallback(generation, async (model) => {
-    const res = await call(`models/${model}:streamGenerateContent?alt=sse`, {
+    const res = await openStream(model, {
       systemInstruction: { parts: [{ text: system }] },
       contents,
       generationConfig: { temperature, maxOutputTokens },
-    }, { stream: true, signal });
+    }, signal);
     onStart?.(model);
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
@@ -169,13 +193,14 @@ export async function streamAnswer({ system, contents, temperature = 0.2, maxOut
         try {
           const json = JSON.parse(line.slice(5));
           const cand = json.candidates?.[0];
-          const text = (cand?.content?.parts || []).map((p) => p.text || '').join('');
+          // Skip "thought" parts: only the written answer goes to the user.
+          const text = (cand?.content?.parts || []).filter((p) => !p.thought).map((p) => p.text || '').join('');
           if (text) onText(text);
           if (cand?.finishReason) finish = cand.finishReason;
         } catch { /* partial or keep-alive line */ }
       }
     }
-    return { model, finish };
+    return { model, finish, thinking: THINKING_VARIANTS[variantFor.get(model) ?? 2] };
   });
 }
 
@@ -185,12 +210,32 @@ export async function translateQuery(text) {
   const { generation } = await listModels();
   const lite = [...generation.filter((m) => m.endsWith('-lite')), ...generation];
   return withFallback(lite, async (model) => {
-    const data = await call(`models/${model}:generateContent`, {
+    const body = {
       systemInstruction: { parts: [{ text: 'Translate the user\'s question into clear, natural English for a document search. Keep technical terms. Reply with only the English question, nothing else.' }] },
       contents: [{ role: 'user', parts: [{ text: text.slice(0, 600) }] }],
-      generationConfig: { temperature: 0, maxOutputTokens: 120 },
-    });
-    const out = (data.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('').trim().replace(/^["']|["']$/g, '');
+      generationConfig: { temperature: 0, maxOutputTokens: 160 },
+    };
+    let out = '';
+    const res = await openStream(model, body);
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      let nl;
+      while ((nl = buf.indexOf('\n')) >= 0) {
+        const line = buf.slice(0, nl).trim();
+        buf = buf.slice(nl + 1);
+        if (!line.startsWith('data:')) continue;
+        try {
+          const parts = JSON.parse(line.slice(5)).candidates?.[0]?.content?.parts || [];
+          out += parts.filter((p) => !p.thought).map((p) => p.text || '').join('');
+        } catch { /* partial line */ }
+      }
+    }
+    out = out.trim().replace(/^["']|["']$/g, '');
     return out && out.length < 600 ? out : null;
   });
 }
