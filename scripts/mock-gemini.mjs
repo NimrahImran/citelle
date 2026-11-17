@@ -23,6 +23,7 @@ export function installMockGemini() {
     if (u.includes('/models?')) {
       return json({ models: [
         { name: 'models/gemini-3.8-flash', supportedGenerationMethods: ['generateContent'] },
+        { name: 'models/gemini-embedding-2', supportedGenerationMethods: ['embedContent'] },
         { name: 'models/gemini-embedding-001', supportedGenerationMethods: ['embedContent'] },
       ] });
     }
