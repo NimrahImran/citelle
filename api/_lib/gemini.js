@@ -198,61 +198,133 @@ async function openStream(model, body, signal) {
       return res;
     } catch (err) {
       lastErr = err;
-      // Only a rejected thinking setting is worth retrying on the same model.
-      if (!(err instanceof GeminiError) || err.status !== 400 || !/think/i.test(err.message)) throw err;
+      // A 400 usually means this model rejects the thinking setting, so try the next variant.
+      if (!(err instanceof GeminiError) || err.status !== 400) throw err;
     }
   }
   throw lastErr;
 }
 
-// Streams an answer. onText receives text pieces as they arrive; returns the model used.
-// A model gets 8s to produce its first words, otherwise the next model is tried.
+// Reads one model's SSE stream, passing answer text (not "thought" parts) to onText.
+async function readStream(res, signal, onText) {
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '';
+  let finish = null;
+  for (;;) {
+    const { value, done } = await guarded(reader.read(), signal);
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    let nl;
+    while ((nl = buf.indexOf('\n')) >= 0) {
+      const line = buf.slice(0, nl).trim();
+      buf = buf.slice(nl + 1);
+      if (!line.startsWith('data:')) continue;
+      let json;
+      try { json = JSON.parse(line.slice(5)); } catch { continue; } // partial or keep-alive line
+      const cand = json.candidates?.[0];
+      const text = (cand?.content?.parts || []).filter((p) => !p.thought).map((p) => p.text || '').join('');
+      if (text) onText(text);
+      if (cand?.finishReason) finish = cand.finishReason;
+    }
+  }
+  return finish;
+}
+
+// Streams an answer, racing models so a busy one never holds the user up.
+// The best model starts first; if it has not written anything after STAGGER ms (or fails), the next
+// one starts too. The first model to write wins, the others are cancelled. A model that stays
+// silent for LIMIT ms is dropped.
+const STAGGER = 2000;
+const LIMIT = 15000;
+
 export async function streamAnswer({ system, contents, temperature = 0.2, maxOutputTokens = 900, onStart, onText, signal, attempts = [] }) {
   const { generation } = await listModels();
-  return withFallback(generation, async (model) => {
-    const limit = timed(8000, signal);
-    let emitted = false;
-    try {
-      const res = await guarded(openStream(model, {
-        systemInstruction: { parts: [{ text: system }] },
-        contents,
-        generationConfig: { temperature, maxOutputTokens },
-      }, limit.signal), limit.signal);
-      onStart?.(model);
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buf = '';
-      let finish = null;
-      for (;;) {
-        const { value, done } = await guarded(reader.read(), limit.signal);
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        let nl;
-        while ((nl = buf.indexOf('\n')) >= 0) {
-          const line = buf.slice(0, nl).trim();
-          buf = buf.slice(nl + 1);
-          if (!line.startsWith('data:')) continue;
-          try {
-            const json = JSON.parse(line.slice(5));
-            const cand = json.candidates?.[0];
-            // Skip "thought" parts: only the written answer goes to the user.
-            const text = (cand?.content?.parts || []).filter((p) => !p.thought).map((p) => p.text || '').join('');
-            if (text) {
-              if (!emitted) { emitted = true; limit.clear(); }
-              onText(text);
-            }
-            if (cand?.finishReason) finish = cand.finishReason;
-          } catch { /* partial or keep-alive line */ }
-        }
-      }
-      return { model, finish, thinking: THINKING_VARIANTS[variantFor.get(model) ?? 2] };
-    } catch (err) {
-      if (emitted) err.committed = true;
-      throw err;
-    } finally {
-      limit.clear();
+  const order = orderModels(generation);
+  const body = { systemInstruction: { parts: [{ text: system }] }, contents, generationConfig: { temperature, maxOutputTokens } };
+
+  return new Promise((resolve, reject) => {
+    let winner = null;
+    let next = 0;
+    let running = 0;
+    let settled = false;
+    const errors = [];
+    const live = new Map(); // model -> AbortController
+    let staggerTimer = null;
+
+    const end = (fn, val) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(staggerTimer);
+      signal?.removeEventListener?.('abort', onOuterAbort);
+      fn(val);
+    };
+    function onOuterAbort() {
+      for (const c of live.values()) c.abort(signal.reason);
+      end(reject, signal.reason instanceof Error ? signal.reason : new Error('aborted'));
     }
-  }, { attempts, remember: true });
+    signal?.addEventListener?.('abort', onOuterAbort);
+
+    function launch() {
+      clearTimeout(staggerTimer);
+      if (settled || winner || next >= order.length) return;
+      const model = order[next++];
+      running++;
+      const ctl = new AbortController();
+      live.set(model, ctl);
+      const t0 = Date.now();
+      const silent = setTimeout(() => ctl.abort(new GeminiError(`no response within ${LIMIT / 1000}s`, 504, true)), LIMIT);
+      staggerTimer = setTimeout(launch, STAGGER);
+
+      const claim = () => {
+        if (winner === model) return true;
+        if (winner) return false;
+        winner = model;
+        clearTimeout(silent);
+        clearTimeout(staggerTimer);
+        for (const [m, c] of live) if (m !== model) c.abort(new GeminiError('another model answered first', 499, true));
+        onStart?.(model);
+        return true;
+      };
+
+      (async () => {
+        const res = await guarded(openStream(model, body, ctl.signal), ctl.signal);
+        const finish = await readStream(res, ctl.signal, (text) => {
+          if (!claim()) throw new GeminiError('another model answered first', 499, true);
+          onText(text);
+        });
+        if (!claim()) throw new GeminiError('another model answered first', 499, true);
+        return finish;
+      })().then((finish) => {
+        clearTimeout(silent);
+        live.delete(model);
+        attempts.push({ model, ok: true, ms: Date.now() - t0 });
+        lastGood = model;
+        cooldown.delete(model);
+        end(resolve, { model, finish, thinking: THINKING_VARIANTS[variantFor.get(model) ?? 2] });
+      }, (err) => {
+        clearTimeout(silent);
+        live.delete(model);
+        running--;
+        if (settled) return;
+        if (winner === model) { // failed part-way through its answer
+          attempts.push({ model, ok: false, ms: Date.now() - t0, error: String(err.message).slice(0, 120) });
+          err.committed = true;
+          return end(reject, err);
+        }
+        if (winner) return attempts.push({ model, ok: false, ms: Date.now() - t0, error: 'cancelled: another model answered first' });
+        attempts.push({ model, ok: false, ms: Date.now() - t0, error: String(err.message).slice(0, 120) });
+        errors.push(`${model}: ${String(err.message).slice(0, 160)}`);
+        cooldown.set(model, Date.now() + COOLDOWN_MS);
+        if (lastGood === model) lastGood = null;
+        if (next < order.length) return launch(); // start the next one right away
+        if (running === 0) end(reject, new GeminiError(errors.join(' | ') || 'No model available', err.status || 503, false));
+      });
+    }
+
+    if (!order.length) return end(reject, new GeminiError('No model available', 503, false));
+    launch();
+  });
 }
 
 // Translates a non-English search question to English, so it matches English documents.
