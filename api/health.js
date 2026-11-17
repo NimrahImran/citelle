@@ -37,16 +37,18 @@ export default async function handler(req, res) {
     const t0 = Date.now();
     let first = null;
     let text = '';
+    const attempts = [];
     try {
       const r = await streamAnswer({
+        attempts,
         system: 'Answer in one short sentence.',
         contents: [{ role: 'user', parts: [{ text: 'What does a vector database store?' }] }],
         maxOutputTokens: 120,
         onText: (t) => { if (first === null) first = Date.now() - t0; text += t; },
       });
-      out.answerTest = { ok: true, model: r.model, thinking: r.thinking, firstWordsMs: first, totalMs: Date.now() - t0, text: text.slice(0, 160) };
+      out.answerTest = { ok: true, model: r.model, thinking: r.thinking, firstWordsMs: first, totalMs: Date.now() - t0, text: text.slice(0, 160), attempts };
     } catch (err) {
-      out.answerTest = { ok: false, error: String(err.message || err).slice(0, 200) };
+      out.answerTest = { ok: false, error: String(err.message || err).slice(0, 200), attempts };
     }
   }
   send(res, 200, out);

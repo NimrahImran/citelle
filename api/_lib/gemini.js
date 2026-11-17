@@ -73,21 +73,43 @@ function hinted(err) {
   return m ? m[1] : null;
 }
 
-async function withFallback(list, fn) {
+// Models that failed recently are tried last for a while, and the last model that worked goes first.
+const cooldown = new Map(); // model -> until (ms)
+let lastGood = null;
+const COOLDOWN_MS = 10 * 60 * 1000;
+
+export function orderModels(list) {
+  const now = Date.now();
+  const ok = list.filter((m) => !(cooldown.get(m) > now));
+  const cold = list.filter((m) => cooldown.get(m) > now);
+  if (lastGood && ok.includes(lastGood)) ok.splice(ok.indexOf(lastGood), 1), ok.unshift(lastGood);
+  return [...ok, ...cold];
+}
+
+async function withFallback(list, fn, { attempts = [], remember = false } = {}) {
   const tried = new Set();
-  const queue = [...list];
+  const queue = orderModels(list);
   const errors = [];
   let lastErr;
   while (queue.length) {
     const model = queue.shift();
     if (tried.has(model)) continue;
     tried.add(model);
+    const t0 = Date.now();
     try {
-      return await fn(model);
+      const out = await fn(model);
+      attempts.push({ model, ok: true, ms: Date.now() - t0 });
+      if (remember) lastGood = model;
+      cooldown.delete(model);
+      return out;
     } catch (err) {
       lastErr = err;
+      attempts.push({ model, ok: false, ms: Date.now() - t0, error: String(err.message).slice(0, 120) });
       errors.push(`${model}: ${String(err.message).slice(0, 160)}`);
+      if (err?.committed) throw err; // text already sent: cannot switch models mid-answer
       if (!(err instanceof GeminiError) || !err.retryable) throw err;
+      cooldown.set(model, Date.now() + COOLDOWN_MS);
+      if (lastGood === model) lastGood = null;
       const hint = hinted(err);
       if (hint && !tried.has(hint)) queue.unshift(hint);
     }
@@ -97,6 +119,22 @@ async function withFallback(list, fn) {
     throw lastErr;
   }
   throw new GeminiError('No model available', 503, false);
+}
+
+// Runs a request with a time limit; a slow model counts as unavailable so the next one is tried.
+function timed(ms, outer) {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(new GeminiError(`no response within ${ms / 1000}s`, 504, true)), ms);
+  const onAbort = () => ctl.abort(outer.reason);
+  outer?.addEventListener?.('abort', onAbort);
+  return { signal: ctl.signal, clear: () => { clearTimeout(timer); outer?.removeEventListener?.('abort', onAbort); } };
+}
+
+async function guarded(promise, signal) {
+  try { return await promise; } catch (err) {
+    if (signal.aborted && signal.reason instanceof GeminiError) throw signal.reason;
+    throw err;
+  }
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -168,40 +206,53 @@ async function openStream(model, body, signal) {
 }
 
 // Streams an answer. onText receives text pieces as they arrive; returns the model used.
-export async function streamAnswer({ system, contents, temperature = 0.2, maxOutputTokens = 900, onStart, onText, signal }) {
+// A model gets 8s to produce its first words, otherwise the next model is tried.
+export async function streamAnswer({ system, contents, temperature = 0.2, maxOutputTokens = 900, onStart, onText, signal, attempts = [] }) {
   const { generation } = await listModels();
   return withFallback(generation, async (model) => {
-    const res = await openStream(model, {
-      systemInstruction: { parts: [{ text: system }] },
-      contents,
-      generationConfig: { temperature, maxOutputTokens },
-    }, signal);
-    onStart?.(model);
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buf = '';
-    let finish = null;
-    for (;;) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      buf += decoder.decode(value, { stream: true });
-      let nl;
-      while ((nl = buf.indexOf('\n')) >= 0) {
-        const line = buf.slice(0, nl).trim();
-        buf = buf.slice(nl + 1);
-        if (!line.startsWith('data:')) continue;
-        try {
-          const json = JSON.parse(line.slice(5));
-          const cand = json.candidates?.[0];
-          // Skip "thought" parts: only the written answer goes to the user.
-          const text = (cand?.content?.parts || []).filter((p) => !p.thought).map((p) => p.text || '').join('');
-          if (text) onText(text);
-          if (cand?.finishReason) finish = cand.finishReason;
-        } catch { /* partial or keep-alive line */ }
+    const limit = timed(8000, signal);
+    let emitted = false;
+    try {
+      const res = await guarded(openStream(model, {
+        systemInstruction: { parts: [{ text: system }] },
+        contents,
+        generationConfig: { temperature, maxOutputTokens },
+      }, limit.signal), limit.signal);
+      onStart?.(model);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+      let finish = null;
+      for (;;) {
+        const { value, done } = await guarded(reader.read(), limit.signal);
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        let nl;
+        while ((nl = buf.indexOf('\n')) >= 0) {
+          const line = buf.slice(0, nl).trim();
+          buf = buf.slice(nl + 1);
+          if (!line.startsWith('data:')) continue;
+          try {
+            const json = JSON.parse(line.slice(5));
+            const cand = json.candidates?.[0];
+            // Skip "thought" parts: only the written answer goes to the user.
+            const text = (cand?.content?.parts || []).filter((p) => !p.thought).map((p) => p.text || '').join('');
+            if (text) {
+              if (!emitted) { emitted = true; limit.clear(); }
+              onText(text);
+            }
+            if (cand?.finishReason) finish = cand.finishReason;
+          } catch { /* partial or keep-alive line */ }
+        }
       }
+      return { model, finish, thinking: THINKING_VARIANTS[variantFor.get(model) ?? 2] };
+    } catch (err) {
+      if (emitted) err.committed = true;
+      throw err;
+    } finally {
+      limit.clear();
     }
-    return { model, finish, thinking: THINKING_VARIANTS[variantFor.get(model) ?? 2] };
-  });
+  }, { attempts, remember: true });
 }
 
 // Translates a non-English search question to English, so it matches English documents.
@@ -216,12 +267,14 @@ export async function translateQuery(text) {
       generationConfig: { temperature: 0, maxOutputTokens: 160 },
     };
     let out = '';
-    const res = await openStream(model, body);
+    const limit = timed(6000);
+    try {
+    const res = await guarded(openStream(model, body, limit.signal), limit.signal);
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
     let buf = '';
     for (;;) {
-      const { value, done } = await reader.read();
+      const { value, done } = await guarded(reader.read(), limit.signal);
       if (done) break;
       buf += decoder.decode(value, { stream: true });
       let nl;
@@ -237,5 +290,6 @@ export async function translateQuery(text) {
     }
     out = out.trim().replace(/^["']|["']$/g, '');
     return out && out.length < 600 ? out : null;
+    } finally { limit.clear(); }
   });
 }
