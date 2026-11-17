@@ -153,7 +153,8 @@ export async function embedTexts(texts, taskType, dims = 768, { batch = 50, maxW
   const { embedding } = await listModels();
   return withFallback(embedding, async (model) => {
     const vectors = [];
-    let waited = 0;
+    // A model that hit its quota a few minutes ago gets one quick try, without waiting on it again.
+    let waited = cooldown.get(model) > Date.now() ? maxWaitMs : 0;
     for (let i = 0; i < texts.length;) {
       const part = texts.slice(i, i + batch);
       try {
