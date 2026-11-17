@@ -13,7 +13,7 @@ Rules:
 3. After every sentence that states a fact, cite the supporting source numbers in square brackets, like [1] or [2, 3]. Never cite a source that does not support the sentence.
 4. If the sources do not contain the answer, reply with exactly this sentence and nothing else: I couldn't find this in your documents.
 5. Be clear and concise: a short paragraph, or a few bullet points starting with "- " when listing. No headings, no tables, no bold.
-6. Reply in the language of the question. If the question is in Roman Urdu, reply in Roman Urdu.`;
+6. Reply in the language of the question. If the question is in Roman Urdu, reply in Roman Urdu written with plain English letters only: no apostrophes, accent marks or special characters inside words (write sharait, masail, ahkam, sharai, Quran). Keep Urdu or Arabic words from the sources in Roman letters too, unless the question itself is written in Urdu script.`;
 
 const LIMITS = { question: 1000, sources: 8, sourceChars: 3500, history: 6, historyChars: 1200 };
 

@@ -16,7 +16,7 @@ if (process.env.MOCK_GEMINI) {
 }
 
 const routes = {};
-for (const name of ['answer', 'embed', 'health', 'contact']) routes[`/api/${name}`] = (await import(`../api/${name}.js`)).default;
+for (const name of ['answer', 'embed', 'health', 'contact', 'ocr']) routes[`/api/${name}`] = (await import(`../api/${name}.js`)).default;
 
 http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);

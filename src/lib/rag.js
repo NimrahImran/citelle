@@ -98,10 +98,13 @@ export function embedText(chunk) {
 const STOP = new Set(('a an and are as at be but by can could did do does for from had has have how i if in into is it its ' +
   'me my of on or our so than that the their them then there these they this to us was we were what when where which ' +
   'who why will with would you your about also any just more most not no only other over same some such very yes ' +
-  'kya hai hain ka ki ke ko se mein aur ya bhi').split(' '));
+  'kya hai hain ka ki ke ko se mein aur ya bhi ' +
+  'کا کی کے کو سے میں ہے ہیں اور یا بھی نے پر یہ وہ اس ان جو تو تھا تھی تھے ہو ہوں گا گی گے کہ جب تک کر کیا').split(' '));
 
 export function terms(text) {
-  return (text.toLowerCase().normalize('NFKD').match(/[a-z0-9]+(?:['’][a-z]+)?/g) || [])
+  // English words and numbers, plus Urdu/Arabic words (Arabic-script letters, normalised first).
+  // Accents and Urdu/Arabic vowel marks are dropped so "café"/"cafe" and آج/اج match each other.
+  return (text.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f\u064B-\u065F\u0670\u06D6-\u06ED]/g, '').match(/[a-z0-9]+(?:['’][a-z]+)?|[\u0621-\u064A\u066E-\u06D3\u06D5\u06FA-\u06FC]{2,}/g) || [])
     .map((w) => w.replace(/['’]s$/, ''))
     .filter((w) => w.length > 1 && !STOP.has(w))
     .map(stem);
@@ -305,7 +308,7 @@ export function extractiveAnswer(query, chunks) {
   const q = new Set(terms(query));
   const picks = [];
   chunks.slice(0, 5).forEach((c, ci) => {
-    const sentences = c.text.match(/[^.!?]+[.!?]+/g) || [c.text];
+    const sentences = c.text.match(/[^.!?۔؟]+[.!?۔؟]+/g) || [c.text];
     let best = null;
     let bestScore = 0;
     for (const s of sentences) {

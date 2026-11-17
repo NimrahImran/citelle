@@ -169,6 +169,11 @@ const API = [
     res: `{ "model": "gemini-embedding-2", "dims": 768, "translated": "What is overfitting?", "vectors": [[0.0123, -0.0456, ...]] }`,
   },
   {
+    method: 'POST', path: '/api/ocr', text: 'Reads the text of one page image. The browser sends only pages that are scanned or whose stored Urdu text comes out scrambled; the text is returned in the page\'s own language and script.',
+    req: `{ "image": "<base64 JPEG of the page>" }`,
+    res: `{ "model": "gemini-…-flash", "text": "سفر کے احکام\\nشرعی سفر کی مقدار …" }`,
+  },
+  {
     method: 'POST', path: '/api/answer', text: 'Writes a cited answer from the numbered sources it receives. Streams newline-delimited JSON events. Falls back to the next available model on quota or outage.',
     req: `{
   "question": "Why do RAG systems overlap chunks?",
@@ -204,8 +209,9 @@ export default function Technical() {
             <h3>BROWSER · REACT</h3>
             {[
               ['PDF.js extraction', 'Text page by page, with printed page labels (i, ii, 1, 2…)', 'lib/pdf.js'],
+              ['Page check and OCR', 'Scanned pages and Urdu pages whose stored text is scrambled are drawn to an image and read by AI', 'pageQuality() · /api/ocr'],
               ['Cleaning', 'Repeating headers, page numbers and hyphenation removed', 'stripRepeatingLines()'],
-              ['Query translation', 'Urdu and Roman Urdu questions are searched in English, answered in the asker\'s language', 'needsTranslation()'],
+              ['Query translation', 'Urdu and Roman Urdu questions are searched in English and in their own wording, answered in the asker\'s language', 'needsTranslation()'],
               ['Chunking', `${SETTINGS.chunkTokens}-token chunks, ${SETTINGS.overlapTokens}-token overlap, never across pages`, 'chunkPage()'],
               ['Hybrid search', 'Cosine over vectors plus BM25, fused with reciprocal rank fusion', 'searchVectors() · searchBM25() · fuse()'],
               ['Decision', `Refuse below ${Math.round(SETTINGS.minSemantic * 100)}% meaning match; send top ${SETTINGS.topK} otherwise`, 'decide()'],
@@ -216,7 +222,8 @@ export default function Technical() {
             <h3>SERVER · VERCEL FUNCTIONS</h3>
             {[
               ['/api/embed', 'Gemini embeddings, 768 dimensions, retrieval task types, rate-limit aware batching'],
-              ['/api/answer', 'Grounded prompt, temperature 0.2, streamed NDJSON, model fallback chain'],
+              ['/api/answer', 'Grounded prompt, temperature 0.2, streamed NDJSON, models raced so a busy one never delays the answer'],
+              ['/api/ocr', 'Reads one page image with a Gemini vision model, keeping the page\'s language and script'],
               ['/api/contact', 'Validation, honeypot, rate limit, Gmail delivery'],
               ['/api/health', 'Configuration status without secrets'],
               ['Build step', 'Neural Ink pre-embedded at deploy time, stored as 8-bit vectors'],

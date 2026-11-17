@@ -22,7 +22,7 @@
   --coral: #B9472F;
   --coral-wash: #FBEDE8;
   --serif: 'Instrument Serif', Georgia, serif;
-  --sans: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --sans: 'Manrope', 'Noto Naskh Arabic', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, monospace;
   --radius: 18px;
   --shadow-sm: 0 1px 2px rgba(20, 27, 38, 0.06), 0 2px 8px rgba(20, 27, 38, 0.05);
@@ -433,3 +433,7 @@ pre.code { margin: 0; padding: 16px 18px; border-radius: 14px; background: var(-
 .service:hover { border-color: var(--sky-2); box-shadow: var(--shadow); }
 .service-icon svg { transition: transform .2s; }
 .service:hover .service-icon svg { transform: scale(1.06); }
+
+/* Urdu and Arabic text: right-to-left with taller lines so dots and marks never touch */
+.source-text:dir(rtl), .passage p:dir(rtl), .msg-ai p:dir(rtl), .msg-ai li:dir(rtl) { line-height: 2; text-align: right; }
+.source-text:dir(rtl) { font-size: 13.5px; }

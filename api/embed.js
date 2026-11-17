@@ -25,11 +25,15 @@ export default async function handler(req, res) {
   let translated = null;
   if (body.translate && task === 'query' && texts.length === 1 && needsTranslation(texts[0])) {
     try { translated = await translateQuery(texts[0]); } catch { translated = null; }
+    // A model that answers instead of translating is ignored.
+    if (translated && /couldn't find this|as an ai|i cannot|translation:/i.test(translated)) translated = null;
   }
 
   try {
     const { model, vectors } = await embedTexts(
-      (translated ? [translated] : texts).map((t) => t.slice(0, MAX_CHARS)),
+      // A translated question is embedded in English and in its original wording, so it matches
+      // English documents and Urdu documents equally well. The English vector comes first.
+      (translated ? [translated, texts[0]] : texts).map((t) => t.slice(0, MAX_CHARS)),
       task === 'query' ? 'RETRIEVAL_QUERY' : 'RETRIEVAL_DOCUMENT',
     );
     const normalised = vectors.map((v) => {

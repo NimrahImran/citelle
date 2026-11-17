@@ -55,11 +55,12 @@ function LibraryPanel({ lib, onPick, show }) {
               <div className="doc-meta">
                 {d.status === 'ready' && `${d.numPages} pages${d.kind === 'demo' ? ' · demo book' : ''}`}
                 {d.status === 'reading' && 'Reading pages…'}
+                {d.status === 'ocr' && `Reading ${d.ocrKind === 'Urdu' ? 'Urdu ' : 'scanned '}pages with AI · ${Math.round((d.progress || 0) * (d.ocrPages || 0))} of ${d.ocrPages}`}
                 {d.status === 'indexing' && `Embedding ${Math.round((d.progress || 0) * 100)}%`}
                 {d.status === 'error' && <span className="err">{d.error}</span>}
               </div>
               {d.note && <div className="doc-meta" style={{ color: 'var(--coral)' }}>{d.note}</div>}
-              {(d.status === 'reading' || d.status === 'indexing') && <div className="progress"><i style={{ width: `${Math.max(8, (d.progress || 0) * 100)}%` }} /></div>}
+              {(d.status === 'reading' || d.status === 'ocr' || d.status === 'indexing') && <div className="progress"><i style={{ width: `${Math.max(8, (d.progress || 0) * 100)}%` }} /></div>}
               {d.status === 'ready' && (
                 <label className="doc-toggle">
                   <button type="button" className="switch" role="switch" aria-checked={d.active} onClick={() => toggleDoc(d.id)} aria-label={`Use ${d.file} in answers`} />
@@ -125,11 +126,11 @@ function SourcesPanel({ turn, active, setActive, lib, show }) {
               <button type="button" onClick={() => setActive(on ? null : i + 1)} style={{ all: 'unset', cursor: 'pointer', display: 'block', width: '100%' }} aria-expanded={on}>
                 <div className="source-top">
                   <span className="num">{i + 1}</span>
-                  <span className="source-file">{c.file}</span>
+                  <span className="source-file" dir="auto">{c.file}</span>
                   <span className="source-page">p. {c.page}</span>
                 </div>
                 {c.section && <div className="source-sec">{c.section}</div>}
-                <p className="source-text">{highlight(c.text, turn.q)}</p>
+                <p className="source-text" dir="auto">{highlight(c.text, turn.q)}</p>
                 {h && (
                   <div className="score">
                     {h.semantic != null && <><span>meaning</span><span className="bar" style={{ maxWidth: 90 }}><i style={{ width: `${Math.max(0, h.semantic) * 100}%` }} /></span><b style={{ color: 'var(--royal)' }}>{Math.round(h.semantic * 100)}%</b></>}
@@ -231,7 +232,7 @@ export default function Workspace() {
             )}
             {turns.map((t) => (
               <div key={t.id} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <div className="msg-user">{t.q}</div>
+                <div className="msg-user" dir="auto">{t.q}</div>
                 <div className="msg-ai">
                   <span className="ai-mark"><i /></span>
                   <div className="ai-body">
@@ -255,7 +256,7 @@ export default function Workspace() {
                           return (
                             <div key={i} className="passage">
                               <div className="passage-top"><Files size={14} />{src?.file}<button className="cite" style={{ marginLeft: 'auto' }} onClick={() => cite(qt.source)}>p. {src?.page}</button></div>
-                              <p>{qt.quote}</p>
+                              <p dir="auto">{qt.quote}</p>
                             </div>
                           );
                         })}

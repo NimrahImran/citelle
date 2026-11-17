@@ -3,7 +3,7 @@ import {
   SETTINGS, buildBM25, searchBM25, searchVectors, decide, chunkDocument, normalizeWhitespace,
   stripRepeatingLines, embedText, dequantize, l2normalize, parseCitations, isRefusal, extractiveAnswer, REFUSAL, smallTalk,
 } from './rag.js';
-import { extractPdf } from './pdf.js';
+import { extractPdf, pageQuality } from './pdf.js';
 import { idbGet, idbSet } from './idb.js';
 
 const listeners = new Set();
@@ -129,6 +129,63 @@ async function ensureDemoVectors() {
 
 // ---------------------------------------------------------------- uploads
 
+// ---------------------------------------------------------------- reading pages from the image (OCR)
+// Pages with no text (scanned) or scrambled Urdu text are drawn to an image and read by the AI.
+const MAX_OCR_PAGES = 40;
+const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function pageToJpeg(pdf, pageIndex) {
+  const page = await pdf.getPage(pageIndex);
+  const base = page.getViewport({ scale: 1 });
+  const viewport = page.getViewport({ scale: Math.min(2.4, 1600 / base.width) });
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.ceil(viewport.width);
+  canvas.height = Math.ceil(viewport.height);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  await page.render({ canvasContext: ctx, viewport }).promise;
+  const image = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+  page.cleanup();
+  canvas.width = 0;
+  canvas.height = 0;
+  return image;
+}
+
+async function readPageText(image) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const r = await fetch('/api/ocr', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ image }) });
+    if (r.ok) return (await r.json()).text || '';
+    if (r.status !== 429 && r.status !== 502) return null;
+    await pause(attempt ? 15000 : 5000);
+  }
+  return null;
+}
+
+// Replaces the text of `targets` (page objects from extractPdf) in place. Returns how many failed.
+async function readPagesFromImages(data, targets, onProgress) {
+  const pdfjs = await loadPdfjs();
+  const pdf = await pdfjs.getDocument({ data: new Uint8Array(data.slice(0)), isEvalSupported: false }).promise;
+  const queue = [...targets];
+  let done = 0;
+  let failed = 0;
+  const worker = async () => {
+    while (queue.length) {
+      const p = queue.shift();
+      try {
+        const text = await readPageText(await pageToJpeg(pdf, p.pageIndex));
+        if (text && text.replace(/\s/g, '').length > 10) { p.text = text; p.readFromImage = true; } else if (text === null) failed++;
+      } catch {
+        failed++;
+      }
+      onProgress(++done / targets.length);
+    }
+  };
+  await Promise.all([worker(), worker(), worker()]);
+  await pdf.destroy();
+  return failed;
+}
+
 export async function addFiles(fileList) {
   const files = [...fileList].filter((f) => /\.pdf$/i.test(f.name) || f.type === 'application/pdf');
   const room = SETTINGS.maxFiles - state.docs.filter((d) => d.kind === 'upload').length;
@@ -154,14 +211,28 @@ async function addPdf(file) {
     const pdfjs = await loadPdfjs();
     const { pages, numPages } = await extractPdf(pdfjs, new Uint8Array(buf), { fileName: file.name });
     if (numPages > SETTINGS.maxPagesPerFile) throw new Error(`This PDF has ${numPages} pages; the limit is ${SETTINGS.maxPagesPerFile}.`);
+    const server = await checkServer();
+    let note = null;
+    if (server.semantic) {
+      // Blank pages are skipped unless most of the PDF is blank, which means it is scanned.
+      const checks = pages.map((p) => ({ p, q: pageQuality(p.text) }));
+      const blank = checks.filter((c) => c.q.reason === 'no-text').length;
+      const targets = checks.filter((c) => c.q.ocr && (c.q.reason !== 'no-text' || blank > pages.length / 2)).map((c) => c.p);
+      if (targets.length) {
+        const urdu = checks.some((c) => c.q.reason === 'reversed' || c.q.reason === 'no-spaces');
+        update({ numPages, status: 'ocr', progress: 0, ocrPages: Math.min(targets.length, MAX_OCR_PAGES), ocrKind: urdu ? 'Urdu' : 'scanned' });
+        const failed = await readPagesFromImages(doc.data, targets.slice(0, MAX_OCR_PAGES), (prog) => update({ progress: prog }));
+        if (failed) note = `${failed} page${failed > 1 ? 's' : ''} could not be read clearly.`;
+        else if (targets.length > MAX_OCR_PAGES) note = `Only the first ${MAX_OCR_PAGES} pages were read from images.`;
+      }
+    }
     const cleaned = stripRepeatingLines(pages.map((p) => ({ ...p, text: normalizeWhitespace(p.text) })));
     const chunks = chunkDocument(cleaned).map((c) => ({ ...c, docId: doc.id }));
-    if (!chunks.length) throw new Error('No selectable text found. Scanned PDFs need OCR first.');
+    if (!chunks.length) throw new Error(server.semantic ? 'No readable text was found in this PDF.' : 'No selectable text found. Scanned PDFs can be read when the AI service is connected.');
     const start = state.chunks.length;
     state.chunks = [...state.chunks, ...chunks];
     state.vectors = [...state.vectors, ...chunks.map(() => null)];
-    update({ numPages, chunkCount: chunks.length, status: 'indexing' });
-    const server = await checkServer();
+    update({ numPages, chunkCount: chunks.length, status: 'indexing', progress: 0, note });
     if (server.semantic) {
       try {
         await embedChunks(chunks.map((_, i) => start + i), (p) => update({ progress: p }));
@@ -221,7 +292,8 @@ export async function retrieve(question, { threshold = SETTINGS.minSemantic, top
       const { model, vectors, translated: english } = await embed([question], 'query', true);
       if (english) {
         translated = english;
-        keywordRaw = searchBM25(bm25For(indices), english, 10).map((r) => ({ ...r, index: indices[r.index] }));
+        // Search with both wordings: English words find English documents, the original finds Urdu ones.
+        keywordRaw = searchBM25(bm25For(indices), `${question}\n${english}`, 10).map((r) => ({ ...r, index: indices[r.index] }));
       }
       if (state.embedModel && model !== state.embedModel) {
         // A different embedding model answered (quota fallback). Its vectors can't be compared with
@@ -229,7 +301,12 @@ export async function retrieve(question, { threshold = SETTINGS.minSemantic, top
         throw new Error('embedding model changed');
       }
       const sub = indices.map((i) => state.vectors[i]);
-      semanticRaw = searchVectors(vectors[0], sub, 10).map((r) => ({ ...r, index: indices[r.index] }));
+      // With a translated question, keep each passage's better score of the two wordings.
+      const best = new Map();
+      for (const v of vectors.slice(0, 2)) {
+        for (const r of searchVectors(v, sub, 10)) if (!best.has(r.index) || best.get(r.index) < r.score) best.set(r.index, r.score);
+      }
+      semanticRaw = [...best.entries()].map(([i, score]) => ({ index: indices[i], score })).sort((a, b) => b.score - a.score).slice(0, 10);
       mode = 'semantic';
     } catch (err) {
       note = 'Semantic search was unavailable, so keyword search was used.';

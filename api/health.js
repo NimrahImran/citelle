@@ -1,5 +1,6 @@
 // GET /api/health  Reports which features are configured. Never returns secrets.
-import { hasKey, listModels, embedTexts, translateQuery, streamAnswer } from './_lib/gemini.js';
+import { hasKey, listModels, embedTexts, translateQuery, streamAnswer, readPageImage } from './_lib/gemini.js';
+import { OCR_SAMPLE, OCR_SAMPLE_TEXT } from './_lib/ocr-sample.js';
 import { send, rateLimited } from './_lib/http.js';
 
 export default async function handler(req, res) {
@@ -49,6 +50,16 @@ export default async function handler(req, res) {
       out.answerTest = { ok: true, model: r.model, thinking: r.thinking, firstWordsMs: first, totalMs: Date.now() - t0, text: text.slice(0, 160), attempts };
     } catch (err) {
       out.answerTest = { ok: false, error: String(err.message || err).slice(0, 200), attempts };
+    }
+  }
+  // ?selftest=ocr reads a small image of Urdu text, to check scanned and Urdu page reading.
+  if (out.semantic && req.query?.selftest === 'ocr' && !rateLimited(req, 'selftest', 5)) {
+    const t0 = Date.now();
+    try {
+      const r = await readPageImage(OCR_SAMPLE);
+      out.ocrTest = { ok: true, model: r.model, ms: Date.now() - t0, text: r.text.slice(0, 300), expected: OCR_SAMPLE_TEXT };
+    } catch (err) {
+      out.ocrTest = { ok: false, error: String(err.message || err).slice(0, 300) };
     }
   }
   send(res, 200, out);

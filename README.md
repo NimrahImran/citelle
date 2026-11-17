@@ -2,7 +2,7 @@
 
 **Ask your PDFs. Get cited answers.**
 
-Citelle is a retrieval-augmented generation (RAG) web app. Upload one PDF or a whole library, ask questions in plain English or Roman Urdu, and get answers that cite the exact **file and page** for every claim. When the documents don't contain the answer, Citelle says so instead of guessing.
+Citelle is a retrieval-augmented generation (RAG) web app. Upload one PDF or a whole library, ask questions in English, Urdu or Roman Urdu, and get answers that cite the exact **file and page** for every claim. When the documents don't contain the answer, Citelle says so instead of guessing.
 
 The demo library is **Neural Ink**, an 84-page illustrated guide to AI and data science written for this project, so every citation in the demo points to a real page.
 
@@ -28,6 +28,7 @@ Built by **Nimra Imran**, AI Engineer.
 | **Page-level citations** | Numbered citation chips open the passage and a render of the real page |
 | **Honest refusals** | Similarity threshold before the model, plus a strict refusal rule in the prompt |
 | **Hybrid retrieval** | Gemini embeddings (cosine) + BM25 keyword search, merged with reciprocal rank fusion |
+| **Urdu and scanned PDFs** | Pages that are scanned, or Urdu pages whose stored text comes out scrambled (common with Nastaliq fonts), are read from the page image by a Gemini vision model |
 | **Private by design** | PDFs are parsed in the browser with PDF.js and never stored on the server |
 | **Streaming answers** | NDJSON streaming with an automatic model fallback chain |
 | **Graceful degradation** | Without the AI service, keyword search returns direct quotes, clearly labelled |

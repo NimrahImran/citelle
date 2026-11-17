@@ -28,15 +28,21 @@ export function installMockGemini() {
     }
     const body = JSON.parse(opts.body || '{}');
     if (u.includes(':batchEmbedContents')) return json({ embeddings: body.requests.map((r) => ({ values: vec(r.content.parts[0].text) })) });
+    if (u.includes(':streamGenerateContent') && body.contents[0].parts[0].inline_data) {
+      // Mock OCR: a fixed, correctly ordered Urdu page.
+      const n = (globalThis.__ocrPage = (globalThis.__ocrPage || 0) + 1);
+      const text = `سفر شرعی کی شرائط (حصہ ${n})\nمسئلہ نمبر ${n}1: شرعی سفر کی مقدار آج کل کے حساب سے بانوے کلو میٹر ہے، یہ بات صفحہ ${n} پر ہے۔\nمسئلہ نمبر ${n}2: بانوے کلو میٹر یا اس سے زیادہ دور جانے کا ارادہ سفر کے احکام کی ابتدا کو لازم ہے، حوالہ ${n}۔`;
+      return new Response(`data: ${JSON.stringify({ candidates: [{ content: { parts: [{ text }] }, finishReason: 'STOP' }] })}\n\n`, { status: 200, headers: { 'content-type': 'text/event-stream' } });
+    }
     if (u.includes(':streamGenerateContent')) {
       const msg = body.contents.at(-1).parts[0].text;
       const q = msg.split('Question:').pop().toLowerCase();
-      const qs = new Set((q.match(/[a-z]+/g) || []).filter((w) => w.length > 3).map(canon));
+      const qs = new Set((q.match(/[a-z]+|[\u0600-\u06FF]{3,}/g) || []).filter((w) => w.length > 3 || /[\u0600-\u06FF]/.test(w)).map(canon));
       const sources = [...msg.matchAll(/<source id="(\d+)"[^>]*>\n([\s\S]*?)\n<\/source>/g)];
       const picks = [];
       for (const [, id, text] of sources) {
-        for (const s of text.match(/[^.!?]+[.!?]/g) || []) {
-          const score = (s.toLowerCase().match(/[a-z]+/g) || []).map(canon).filter((w) => qs.has(w)).length;
+        for (const s of text.match(/[^.!?۔]+[.!?۔]/g) || []) {
+          const score = (s.toLowerCase().match(/[a-z]+|[\u0600-\u06FF]{3,}/g) || []).map(canon).filter((w) => qs.has(w)).length;
           if (score >= 2) picks.push({ s: s.trim(), id, score });
         }
       }

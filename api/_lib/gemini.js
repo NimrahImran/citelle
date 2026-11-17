@@ -365,3 +365,31 @@ export async function translateQuery(text) {
     } finally { limit.clear(); }
   });
 }
+
+// Reads the text of one page image (OCR). Used for scanned PDFs and for Urdu PDFs whose stored text
+// comes out scrambled. Returns plain text in the page's own language and script.
+const OCR_PROMPT = `This image is one page of a PDF document. Transcribe all of its text exactly as written.
+- Keep the original language and script (Urdu stays in Urdu script, Arabic stays Arabic, English stays English). Do not translate, summarise, explain or correct anything.
+- Follow the natural reading order (right to left for Urdu and Arabic), top to bottom.
+- Put each heading, paragraph and list item on its own line. Keep numbers as they appear.
+- Do not add notes, labels or formatting marks. If the page has no text, reply with nothing.`;
+
+export async function readPageImage(base64, mime = 'image/jpeg') {
+  const { generation } = await listModels();
+  // Full flash models read Urdu script more accurately than the lite ones, so they go first.
+  const order = [...generation.filter((m) => !m.endsWith('-lite')), ...generation.filter((m) => m.endsWith('-lite'))];
+  return withFallback(order, async (model) => {
+    const limit = timed(40000);
+    try {
+      const res = await guarded(openStream(model, {
+        contents: [{ role: 'user', parts: [{ inline_data: { mime_type: mime, data: base64 } }, { text: OCR_PROMPT }] }],
+        generationConfig: { temperature: 0, maxOutputTokens: 6000 },
+      }, limit.signal), limit.signal);
+      let text = '';
+      const finish = await readStream(res, limit.signal, (t) => { text += t; });
+      return { model, text: text.replace(/```[a-z]*\n?|```/g, '').trim(), finish };
+    } finally {
+      limit.clear();
+    }
+  });
+}
