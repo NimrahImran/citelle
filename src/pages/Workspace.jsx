@@ -29,7 +29,11 @@ function LibraryPanel({ lib, onPick, show }) {
   const [msg, setMsg] = useState([]);
   const input = useRef(null);
   const outdated = useUpdateAvailable();
-  const take = async (files) => {
+  const take = async (fileList) => {
+    // Copy the chosen files right away: the file input is cleared straight after this call,
+    // which would empty the browser's live FileList while we wait below.
+    const files = Array.from(fileList || []);
+    if (!files.length) return;
     // A tab opened before the latest update would read the file with old code, so ask for a refresh first.
     if (await checkForUpdate(true)) return setMsg(['Citelle was just updated. Refresh the page, then add your file again.']);
     setMsg(await addFiles(files));
