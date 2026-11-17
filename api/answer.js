@@ -54,7 +54,7 @@ export default async function handler(req, res) {
 
   res.statusCode = 200;
   res.setHeader('content-type', 'application/x-ndjson; charset=utf-8');
-  res.setHeader('cache-control', 'no-store');
+  res.setHeader('cache-control', 'no-store, no-transform');
   res.setHeader('x-accel-buffering', 'no');
   const emit = (event) => res.write(JSON.stringify(event) + '\n');
   res.flushHeaders?.();
