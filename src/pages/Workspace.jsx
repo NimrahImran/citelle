@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { checkForUpdate, useUpdateAvailable } from '../lib/version.js';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useLibrary } from '../useLibrary.js';
 import { ask, addFiles, removeDoc, toggleDoc } from '../lib/library.js';
@@ -27,12 +28,23 @@ function LibraryPanel({ lib, onPick, show }) {
   const [drag, setDrag] = useState(false);
   const [msg, setMsg] = useState([]);
   const input = useRef(null);
-  const take = async (files) => setMsg(await addFiles(files));
+  const outdated = useUpdateAvailable();
+  const take = async (files) => {
+    // A tab opened before the latest update would read the file with old code, so ask for a refresh first.
+    if (await checkForUpdate(true)) return setMsg(['Citelle was just updated. Refresh the page, then add your file again.']);
+    setMsg(await addFiles(files));
+  };
   const book = lib.book;
   return (
     <section className={`panel${show ? ' show' : ''}`} aria-label="Library">
       <div className="panel-head"><h2>LIBRARY</h2><span className="badge badge-blue">{lib.docs.filter((d) => d.active).length} active</span></div>
       <div className="panel-body">
+        {outdated && (
+          <div className="update-note" role="status">
+            <span>A newer version of Citelle is live.</span>
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => window.location.reload()}>Refresh</button>
+          </div>
+        )}
         <label
           className={`dropzone${drag ? ' drag' : ''}`}
           onDragOver={(e) => { e.preventDefault(); setDrag(true); }}

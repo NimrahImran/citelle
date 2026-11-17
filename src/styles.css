@@ -437,3 +437,6 @@ pre.code { margin: 0; padding: 16px 18px; border-radius: 14px; background: var(-
 /* Urdu and Arabic text: right-to-left with taller lines so dots and marks never touch */
 .source-text:dir(rtl), .passage p:dir(rtl), .msg-ai p:dir(rtl), .msg-ai li:dir(rtl) { line-height: 2; text-align: right; }
 .source-text:dir(rtl) { font-size: 13.5px; }
+
+/* Shown when the open tab is older than the live site */
+.update-note { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; padding: 10px 12px; border-radius: 12px; background: var(--sky-wash); border: 1px solid var(--sky-2); font-size: 13px; font-weight: 600; color: var(--royal-2, #163D8C); }

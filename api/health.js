@@ -9,6 +9,7 @@ export default async function handler(req, res) {
     semantic: hasKey(),
     email: Boolean(process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD),
     time: new Date().toISOString(),
+    version: (process.env.VERCEL_GIT_COMMIT_SHA || 'dev').slice(0, 12),
   };
   if (out.semantic && req.query?.models === '1') {
     const m = await listModels();
